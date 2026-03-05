@@ -1,0 +1,58 @@
+const courses = [
+    {
+        title: 'Full Stack Web Development Bootcamp',
+        description: 'Learn MERN stack from scratch. Build real-world applications including a course platform, e-commerce site, and social media app. Covers React, Node.js, Express, MongoDB, and Redux.',
+        instructor: 'Dr. Angela Yu',
+        price: 99.99,
+        thumbnail: 'https://images.unsplash.com/photo-1593720213428-28a5b9e94613?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+        category: 'Web Development',
+        level: 'Beginner',
+    },
+    {
+        title: 'Machine Learning Masterclass',
+        description: 'Master Machine Learning with Python. Learn to build and deploy ML models using Scikit-Learn, TensorFlow, and PyTorch.',
+        instructor: 'Andrew Ng',
+        price: 129.99,
+        thumbnail: 'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+        category: 'Data Science',
+        level: 'Advanced',
+    },
+    {
+        title: 'DevOps with Docker and Kubernetes',
+        description: 'Master containerization and orchestration. Build CI/CD pipelines and deploy microservices architectures.',
+        instructor: 'Stephen Grider',
+        price: 79.99,
+        thumbnail: 'https://images.unsplash.com/photo-1667372393119-c81c0cda0c16?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+        category: 'DevOps',
+        level: 'Intermediate',
+    },
+    {
+        title: 'Advanced React patterns',
+        description: 'Level up your React skills. Learn High Order Components, Render Props, Custom Hooks, and Compound Components.',
+        instructor: 'Kent C. Dodds',
+        price: 59.99,
+        thumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+        category: 'Web Development',
+        level: 'Advanced',
+    },
+    {
+        title: 'Cybersecurity Fundamentals',
+        description: 'Understand the basics of network security, cryptography, and ethical hacking.',
+        instructor: 'Nathan House',
+        price: 89.99,
+        thumbnail: 'https://images.unsplash.com/photo-1614064641938-3e813955d50e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+        category: 'Cybersecurity',
+        level: 'Beginner',
+    },
+    {
+        title: 'Flutter & Dart - The Complete Guide',
+        description: 'Build native iOS and Android apps with a single codebase using Flutter and Dart.',
+        instructor: 'Maximilian Schwarzmüller',
+        price: 69.99,
+        thumbnail: 'https://images.unsplash.com/photo-1551650975-87deedd944c3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1474&q=80',
+        category: 'Mobile Development',
+        level: 'Beginner',
+    },
+];
+
+module.exports = courses;

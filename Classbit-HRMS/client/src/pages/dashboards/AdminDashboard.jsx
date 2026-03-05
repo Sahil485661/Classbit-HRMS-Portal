@@ -1,0 +1,244 @@
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import {
+    Users, FileText, Briefcase, AlertCircle,
+    Search, CreditCard, ShoppingCart, TrendingUp
+} from 'lucide-react';
+import {
+    BarChart, Bar, XAxis, YAxis, CartesianGrid,
+    Tooltip, ResponsiveContainer, PieChart, Pie, Cell
+} from 'recharts';
+
+const AdminDashboard = () => {
+    const [data, setData] = useState(null);
+    const [recentTasks, setRecentTasks] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const iconMap = {
+        'Employees': Users,
+        'Grievances': AlertCircle,
+        'Job Seekers': Search,
+        'Active Work': Briefcase,
+        'Total Expenses': TrendingUp
+    };
+
+    const colorMap = {
+        'Employees': 'text-blue-400',
+        'Grievances': 'text-red-400',
+        'Job Seekers': 'text-teal-400',
+        'Active Work': 'text-orange-400',
+        'Total Expenses': 'text-green-400'
+    };
+
+    const bgMap = {
+        'Employees': 'bg-blue-400/10',
+        'Grievances': 'bg-red-400/10',
+        'Job Seekers': 'bg-teal-400/10',
+        'Active Work': 'bg-orange-400/10',
+        'Total Expenses': 'bg-green-400/10'
+    };
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            setLoading(true);
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) return;
+                const headers = { Authorization: `Bearer ${token}` };
+
+                // Fetch individually
+                try {
+                    const statsRes = await axios.get('http://localhost:5000/api/dashboard/stats', { headers });
+                    setData(statsRes.data);
+                } catch (e) {
+                    console.error('Stats fetch failed:', e);
+                }
+
+                try {
+                    const tasksRes = await axios.get('http://localhost:5000/api/tasks/my', { headers });
+                    setRecentTasks(Array.isArray(tasksRes.data) ? tasksRes.data.slice(0, 5) : []);
+                } catch (e) {
+                    console.error('Recent tasks fetch failed:', e);
+                    setRecentTasks([]);
+                }
+
+            } catch (error) {
+                console.error('Error in fetchDashboardData:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchDashboardData();
+    }, []);
+
+    const COLORS = ['#3b82f6', '#ec4899', '#8b5cf6'];
+
+    if (loading) return <div className="p-8 text-slate-400 italic">Synchronizing system data...</div>;
+
+    return (
+        <div className="space-y-8 animate-in fade-in duration-700">
+            <div className="flex justify-between items-center text-left">
+                <div>
+                    <h1 className="text-2xl font-bold text-[var(--text-primary)]">System Overview</h1>
+                    <p className="text-[var(--text-secondary)] mt-1">Real-time HRMS analytics and reporting.</p>
+                </div>
+                <button className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-blue-900/20">
+                    Generate Report
+                </button>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                {data?.summary?.map((stat) => (
+                    <div key={stat.name} className="bg-[var(--card-bg)] shadow-xl border border-[var(--border-color)] p-5 rounded-2xl hover:border-blue-500/30 transition-all group">
+                        <div className="flex justify-between items-start">
+                            <div className="text-left">
+                                <p className="text-[var(--text-secondary)] text-[10px] font-bold uppercase tracking-wider">{stat.name}</p>
+                                <h3 className="text-xl font-bold text-[var(--text-primary)] mt-1">{stat.value}</h3>
+                            </div>
+                            <div className={`${bgMap[stat.name] || 'bg-[var(--bg-secondary)]'} p-2.5 rounded-xl group-hover:scale-110 transition-transform`}>
+                                {iconMap[stat.name] ? React.createElement(iconMap[stat.name], { className: `w-5 h-5 ${colorMap[stat.name] || 'text-slate-400'}` }) : <Briefcase className="w-5 h-5" />}
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Attendance Chart */}
+                <div className="lg:col-span-2 bg-[var(--card-bg)] border border-[var(--border-color)] p-6 rounded-2xl shadow-xl transition-colors">
+                    <h3 className="text-sm font-bold text-[var(--text-secondary)] mb-6 uppercase tracking-widest text-left">Internal Attendance Trend</h3>
+                    <div className="h-80 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                                data={data?.attendanceTrend || []}
+                                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                            >
+                                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} opacity={0.5} />
+                                <XAxis dataKey="name" stroke="var(--text-secondary)" fontSize={11} tickLine={false} axisLine={false} tick={{ dy: 10 }} />
+                                <YAxis stroke="var(--text-secondary)" fontSize={11} tickLine={false} axisLine={false} />
+                                <Tooltip
+                                    cursor={{ fill: 'var(--hover-bg)', opacity: 0.1 }}
+                                    contentStyle={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '12px', fontSize: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                                    itemStyle={{ color: 'var(--text-primary)' }}
+                                />
+                                <Bar dataKey="present" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
+                                <Bar dataKey="absent" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={24} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Gender Distribution */}
+                <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-6 rounded-2xl shadow-xl transition-colors">
+                    <h3 className="text-sm font-bold text-[var(--text-secondary)] mb-6 uppercase tracking-widest text-left">Staff Diversity</h3>
+                    <div className="h-64 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={data?.genderDistribution || []}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={70}
+                                    outerRadius={95}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                    nameKey="name"
+                                    labelLine={false}
+                                >
+                                    {(data?.genderDistribution || []).map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
+                                    ))}
+                                </Pie>
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '12px', fontSize: '12px' }}
+                                    itemStyle={{ color: 'var(--text-primary)' }}
+                                />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                    <div className="mt-6 space-y-3">
+                        {data?.genderDistribution?.map((item, index) => (
+                            <div key={item.name} className="flex justify-between items-center text-sm">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index] }} />
+                                    <span className="text-[var(--text-secondary)] font-medium">{item.name}</span>
+                                </div>
+                                <span className="text-[var(--text-primary)] font-bold">{item.value}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Recent Tasks Table */}
+            <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl shadow-xl overflow-hidden transition-colors">
+                <div className="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
+                    <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-widest italic">Active Work Assignments</h3>
+                    <span className="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full font-bold">LIVE UPDATES</span>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left order-collapse">
+                        <thead>
+                            <tr className="bg-[var(--bg-secondary)]/30 text-[var(--text-secondary)] text-[10px] uppercase tracking-widest">
+                                <th className="px-6 py-4">Task Title</th>
+                                <th className="px-6 py-4">Priority</th>
+                                <th className="px-6 py-4">Assigned To</th>
+                                <th className="px-6 py-4">Deadline</th>
+                                <th className="px-6 py-4">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[var(--border-color)]">
+                            {recentTasks.length === 0 ? (
+                                <tr><td colSpan="5" className="px-6 py-12 text-center text-slate-500 italic">No recent assignments found.</td></tr>
+                            ) : (
+                                recentTasks.map((task) => (
+                                    <tr key={task.id} className="hover:bg-slate-800/10 transition-colors">
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm font-bold text-[var(--text-primary)]">{task.title}</div>
+                                            <div className="text-[10px] text-[var(--text-secondary)] line-clamp-1">{task.description}</div>
+                                            <div className="text-[9px] text-blue-400 font-bold mt-1">
+                                                By: {task.Creator?.Employee ? `${task.Creator.Employee.firstName} ${task.Creator.Employee.lastName}` : (task.Creator?.email || 'Admin')}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${task.priority === 'High' || task.priority === 'Urgent' ? 'bg-red-500/10 text-red-500' : 'bg-blue-500/10 text-blue-500'
+                                                }`}>
+                                                {task.priority}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex -space-x-2">
+                                                {task.TaskAssignments?.slice(0, 3).map((asg, i) => (
+                                                    <div key={i} title={`${asg.Employee?.firstName || 'User'} (${asg.Employee?.employeeId || 'NA'})`} className="w-7 h-7 rounded-full bg-blue-600 border-2 border-[var(--card-bg)] flex items-center justify-center text-[8px] font-bold text-white uppercase">
+                                                        {asg.Employee?.firstName?.[0] || '?'}
+                                                    </div>
+                                                ))}
+                                                {task.TaskAssignments?.length > 3 && (
+                                                    <div className="w-7 h-7 rounded-full bg-slate-700 border-2 border-[var(--card-bg)] flex items-center justify-center text-[8px] font-bold text-slate-400">
+                                                        +{task.TaskAssignments.length - 3}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-xs text-[var(--text-secondary)] italic">
+                                            {new Date(task.deadline).toLocaleDateString()}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${task.status === 'Completed' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-orange-500/10 text-orange-500 border-orange-500/20'
+                                                }`}>
+                                                {task.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default AdminDashboard;
