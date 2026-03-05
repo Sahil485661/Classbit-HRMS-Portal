@@ -12,8 +12,16 @@ const GrievancePage = () => {
     const [formData, setFormData] = useState({
         subject: '',
         description: '',
+        category: 'General',
         isAnonymous: false
     });
+    const [selectedGrievance, setSelectedGrievance] = useState(null);
+    const [isResolveModalOpen, setIsResolveModalOpen] = useState(false);
+    const [resolveData, setResolveData] = useState({
+        status: 'In Progress',
+        response: ''
+    });
+    const [searchTerm, setSearchTerm] = useState('');
 
     const fetchGrievances = async () => {
         try {
@@ -40,15 +48,40 @@ const GrievancePage = () => {
         e.preventDefault();
         try {
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/grievance', formData, {
+            await axios.post('http://localhost:5000/api/grievance/submit', formData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setIsAddModalOpen(false);
-            setFormData({ subject: '', description: '', isAnonymous: false });
+            setFormData({ subject: '', description: '', category: 'General', isAnonymous: false });
             fetchGrievances();
         } catch (error) {
             alert('Failed to submit grievance');
         }
+    };
+
+    const handleResolve = async (e) => {
+        e.preventDefault();
+        try {
+            const token = localStorage.getItem('token');
+            await axios.patch(`http://localhost:5000/api/grievance/${selectedGrievance.id}/resolve`, resolveData, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setIsResolveModalOpen(false);
+            setResolveData({ status: 'In Progress', response: '' });
+            setSelectedGrievance(null);
+            fetchGrievances();
+        } catch (error) {
+            alert('Failed to update grievance');
+        }
+    };
+
+    const openResolveModal = (grievance) => {
+        setSelectedGrievance(grievance);
+        setResolveData({
+            status: grievance.status,
+            response: grievance.response || ''
+        });
+        setIsResolveModalOpen(true);
     };
 
     return (
@@ -72,8 +105,8 @@ const GrievancePage = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
                     { label: 'Open Issues', count: grievances.filter(g => g.status === 'Open').length, icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-500/10' },
-                    { label: 'Under Review', count: grievances.filter(g => g.status === 'Processing').length, icon: Clock, color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
-                    { label: 'Resolved', count: grievances.filter(g => g.status === 'Resolved').length, icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-500/10' },
+                    { label: 'Under Review', count: grievances.filter(g => g.status === 'In Progress').length, icon: Clock, color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
+                    { label: 'Resolved', count: grievances.filter(g => g.status === 'Resolved' || g.status === 'Closed').length, icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-500/10' },
                 ].map((stat, i) => (
                     <div key={i} className="bg-[var(--card-bg)] border border-[var(--border-color)] p-6 rounded-2xl shadow-md flex items-center gap-6">
                         <div className={`p-4 ${stat.bg} ${stat.color} rounded-2xl`}>
@@ -96,58 +129,113 @@ const GrievancePage = () => {
                             type="text"
                             placeholder="Search tickets..."
                             className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-full pl-10 pr-4 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
                 </div>
                 <div className="divide-y divide-[var(--border-color)]">
                     {loading ? (
                         <div className="p-12 text-center text-[var(--text-secondary)] italic">Connecting to support server...</div>
-                    ) : grievances.length === 0 ? (
-                        <div className="p-12 text-center text-[var(--text-secondary)] italic text-sm">No grievances recorded. Your workplace is healthy!</div>
+                    ) : grievances.filter(g =>
+                        g.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        g.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        g.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        (g.Employee && `${g.Employee.firstName} ${g.Employee.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()))
+                    ).length === 0 ? (
+                        <div className="p-12 text-center text-[var(--text-secondary)] italic text-sm">
+                            {searchTerm ? `No results found for "${searchTerm}"` : 'No grievances recorded. Your workplace is healthy!'}
+                        </div>
                     ) : (
-                        grievances.map((g) => (
-                            <div key={g.id} className="p-6 hover:bg-[var(--bg-secondary)]/30 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                <div className="space-y-1">
-                                    <div className="flex items-center gap-2">
-                                        <h4 className="font-bold text-[var(--text-primary)]">{g.subject}</h4>
-                                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter ${g.status === 'Resolved' ? 'bg-green-500/10 text-green-500' :
-                                                g.status === 'Processing' ? 'bg-yellow-500/10 text-yellow-500' : 'bg-red-500/10 text-red-500'
-                                            }`}>
-                                            {g.status}
-                                        </span>
+                        grievances
+                            .filter(g =>
+                                g.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                g.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                g.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                (g.Employee && `${g.Employee.firstName} ${g.Employee.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()))
+                            )
+                            .map((g) => (
+                                <div key={g.id} className="p-6 hover:bg-[var(--bg-secondary)]/30 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-black bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 uppercase tracking-tighter">
+                                                {g.category || 'General'}
+                                            </span>
+                                            <h4 className="font-bold text-[var(--text-primary)]">{g.subject}</h4>
+                                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter ${g.status === 'Resolved' ? 'bg-green-500/10 text-green-500' :
+                                                g.status === 'In Progress' ? 'bg-yellow-500/10 text-yellow-500' : 'bg-red-500/10 text-red-500'
+                                                }`}>
+                                                {g.status}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-[var(--text-secondary)] line-clamp-2 max-w-2xl leading-relaxed">{g.description}</p>
+                                        <div className="flex items-center gap-4 mt-2">
+                                            <span className="text-[10px] text-[var(--text-secondary)] flex items-center gap-1">
+                                                <Clock className="w-3 h-3" />
+                                                {new Date(g.createdAt).toLocaleDateString()}
+                                            </span>
+                                            <span className="text-[10px] text-[var(--text-secondary)] font-bold italic">
+                                                - {g.isAnonymous ? 'Anonymous' : (g.Employee ? `${g.Employee.firstName} ${g.Employee.lastName}` : 'Public')}
+                                            </span>
+                                            {g.response && (
+                                                <span className="text-[10px] text-green-400 font-bold flex items-center gap-1">
+                                                    <MessageSquare className="w-3 h-3" />
+                                                    Has Response
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
-                                    <p className="text-xs text-[var(--text-secondary)] line-clamp-2 max-w-2xl leading-relaxed">{g.description}</p>
-                                    <div className="flex items-center gap-4 mt-2">
-                                        <span className="text-[10px] text-[var(--text-secondary)] flex items-center gap-1">
-                                            <Clock className="w-3 h-3" />
-                                            {new Date(g.createdAt).toLocaleDateString()}
-                                        </span>
-                                        <span className="text-[10px] text-[var(--text-secondary)] font-bold italic">
-                                            - {g.isAnonymous ? 'Anonymous' : (g.Employee ? `${g.Employee.firstName} ${g.Employee.lastName}` : 'Direct')}
-                                        </span>
+                                    <div className="flex gap-2 self-end md:self-center">
+                                        {(user.role === 'Super Admin' || user.role === 'HR') && (
+                                            <button
+                                                onClick={() => openResolveModal(g)}
+                                                className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md"
+                                            >
+                                                Take Action
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={() => openResolveModal(g)}
+                                            className="bg-[var(--bg-secondary)] border border-[var(--border-color)] px-4 py-2 rounded-xl text-xs font-bold text-[var(--text-secondary)] hover:text-blue-400 hover:border-blue-400/50 transition-all"
+                                        >
+                                            View Details
+                                        </button>
                                     </div>
                                 </div>
-                                <button className="self-end md:self-center bg-[var(--bg-secondary)] border border-[var(--border-color)] px-4 py-2 rounded-xl text-xs font-bold text-[var(--text-secondary)] hover:text-blue-400 hover:border-blue-400/50 transition-all">
-                                    View Details
-                                </button>
-                            </div>
-                        ))
+                            ))
                     )}
                 </div>
             </div>
 
             <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="New Grievance Report">
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="text-xs font-bold text-[var(--text-secondary)] uppercase block mb-2">Subject</label>
-                        <input
-                            type="text"
-                            required
-                            className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl px-4 py-3 text-[var(--text-primary)] focus:outline-none"
-                            placeholder="Brief title of the issue"
-                            value={formData.subject}
-                            onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-xs font-bold text-[var(--text-secondary)] uppercase block mb-2">Category</label>
+                            <select
+                                className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl px-4 py-3 text-[var(--text-primary)] focus:outline-none"
+                                value={formData.category}
+                                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                            >
+                                <option value="General">General</option>
+                                <option value="Harassment">Harassment</option>
+                                <option value="Work Environment">Work Environment</option>
+                                <option value="Salary/Payroll">Salary/Payroll</option>
+                                <option value="Policy Violation">Policy Violation</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-[var(--text-secondary)] uppercase block mb-2">Subject</label>
+                            <input
+                                type="text"
+                                required
+                                className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl px-4 py-3 text-[var(--text-primary)] focus:outline-none"
+                                placeholder="Brief title"
+                                value={formData.subject}
+                                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                            />
+                        </div>
                     </div>
                     <div>
                         <label className="text-xs font-bold text-[var(--text-secondary)] uppercase block mb-2">Detailed Description</label>
@@ -177,6 +265,60 @@ const GrievancePage = () => {
                         </button>
                     </div>
                 </form>
+            </Modal>
+
+            <Modal isOpen={isResolveModalOpen} onClose={() => setIsResolveModalOpen(false)} title="Grievance Detail & Action">
+                {selectedGrievance && (
+                    <div className="space-y-6">
+                        <div className="bg-[var(--bg-secondary)] p-4 rounded-2xl border border-[var(--border-color)]">
+                            <h4 className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-2">Original Concern</h4>
+                            <p className="text-sm text-[var(--text-primary)] font-semibold">{selectedGrievance.subject}</p>
+                            <p className="text-xs text-[var(--text-secondary)] mt-2 leading-relaxed">{selectedGrievance.description}</p>
+                        </div>
+
+                        <form onSubmit={handleResolve} className="space-y-4">
+                            <div>
+                                <label className="text-xs font-bold text-[var(--text-secondary)] uppercase block mb-2">Update Status</label>
+                                <select
+                                    className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl px-4 py-3 text-[var(--text-primary)] focus:outline-none"
+                                    value={resolveData.status}
+                                    onChange={(e) => setResolveData({ ...resolveData, status: e.target.value })}
+                                    disabled={user.role === 'Employee'}
+                                >
+                                    <option value="Open">Open</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Resolved">Resolved</option>
+                                    <option value="Closed">Closed</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-[var(--text-secondary)] uppercase block mb-2">Official Response</label>
+                                <textarea
+                                    required={user.role !== 'Employee'}
+                                    rows="4"
+                                    className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl px-4 py-3 text-[var(--text-primary)] focus:outline-none"
+                                    placeholder="Provide resolution details or update..."
+                                    value={resolveData.response}
+                                    onChange={(e) => setResolveData({ ...resolveData, response: e.target.value })}
+                                    readOnly={user.role === 'Employee'}
+                                ></textarea>
+                            </div>
+
+                            {user.role !== 'Employee' ? (
+                                <div className="flex justify-end gap-3 pt-4">
+                                    <button type="button" onClick={() => setIsResolveModalOpen(false)} className="px-6 py-2.5 text-[var(--text-secondary)] font-semibold text-xs uppercase tracking-widest">Cancel</button>
+                                    <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-2.5 rounded-2xl font-bold transition-all shadow-lg text-sm">
+                                        Update Ticket
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="flex justify-end pt-4">
+                                    <button type="button" onClick={() => setIsResolveModalOpen(false)} className="bg-[var(--bg-secondary)] border border-[var(--border-color)] px-8 py-2.5 rounded-2xl text-xs font-bold text-[var(--text-secondary)]">Close View</button>
+                                </div>
+                            )}
+                        </form>
+                    </div>
+                )}
             </Modal>
         </div>
     );

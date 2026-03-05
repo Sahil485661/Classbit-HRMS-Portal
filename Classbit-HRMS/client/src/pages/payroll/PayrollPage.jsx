@@ -52,6 +52,43 @@ const PayrollPage = () => {
         }
     };
 
+    const handleDisburse = async () => {
+        if (!window.confirm('Are you sure you want to disburse all pending salaries for this period? This will record financial transactions.')) return;
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.post('http://localhost:5000/api/payroll/disburse', genData, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            alert(res.data.message);
+            fetchPayslips();
+        } catch (error) {
+            alert(error.response?.data?.message || 'Disbursement failed');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const downloadPayslip = async (id, name, month, year) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get(`http://localhost:5000/api/payroll/download/${id}`, {
+                headers: { Authorization: `Bearer ${token}` },
+                responseType: 'blob'
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Payslip_${name}_${month}_${year}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            alert('Failed to download payslip');
+        }
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex justify-between items-center text-left">
@@ -63,13 +100,22 @@ const PayrollPage = () => {
                 </div>
                 <div className="flex gap-3">
                     {isAdmin && (
-                        <button
-                            onClick={() => setIsGenerateModalOpen(true)}
-                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-900/20"
-                        >
-                            <Wand2 className="w-4 h-4" />
-                            Generate Payroll
-                        </button>
+                        <>
+                            <button
+                                onClick={() => setIsGenerateModalOpen(true)}
+                                className="flex items-center gap-2 bg-[var(--bg-secondary)] hover:bg-[var(--hover-bg)] text-[var(--text-primary)] px-5 py-2.5 rounded-xl font-bold transition-all border border-[var(--border-color)]"
+                            >
+                                <Wand2 className="w-4 h-4" />
+                                Review Cycle
+                            </button>
+                            <button
+                                onClick={handleDisburse}
+                                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-900/20"
+                            >
+                                <CreditCard className="w-4 h-4" />
+                                Disburse Funds
+                            </button>
+                        </>
                     )}
                     <button className="flex items-center gap-2 bg-[var(--card-bg)] hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] px-4 py-2 rounded-xl text-sm font-medium transition-all border border-[var(--border-color)]">
                         <Filter className="w-4 h-4" />
@@ -188,7 +234,10 @@ const PayrollPage = () => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <button className="text-blue-400 hover:text-blue-300">
+                                            <button
+                                                onClick={() => downloadPayslip(rec.id, rec.Employee?.firstName, rec.month, rec.year)}
+                                                className="text-blue-400 hover:text-blue-300"
+                                            >
                                                 <Download className="w-4 h-4" />
                                             </button>
                                         </td>
