@@ -47,6 +47,7 @@ const NotificationHub = () => {
             fetchData();
 
             // Navigate based on type
+            if (type === 'Grievance') navigate('/grievance');
             if (type === 'Leave') navigate('/leave');
             if (type === 'Task') navigate('/work');
             setIsOpen(false);
@@ -76,6 +77,7 @@ const NotificationHub = () => {
             case 'Quote': return Quote;
             case 'Task': return Clock;
             case 'Leave': return Calendar;
+            case 'Grievance': return AlertCircle;
             case 'System': return AlertCircle;
             default: return Bell;
         }
@@ -88,6 +90,7 @@ const NotificationHub = () => {
             case 'Quote': return 'text-purple-400';
             case 'Task': return 'text-blue-400';
             case 'Leave': return 'text-emerald-400';
+            case 'Grievance': return 'text-rose-400';
             case 'System': return 'text-rose-400';
             default: return 'text-slate-400';
         }

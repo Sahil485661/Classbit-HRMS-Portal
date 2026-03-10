@@ -21,7 +21,6 @@ const GrievancePage = () => {
         status: 'In Progress',
         response: ''
     });
-    const [searchTerm, setSearchTerm] = useState('');
 
     const fetchGrievances = async () => {
         try {
@@ -129,80 +128,64 @@ const GrievancePage = () => {
                             type="text"
                             placeholder="Search tickets..."
                             className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-full pl-10 pr-4 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
                 </div>
                 <div className="divide-y divide-[var(--border-color)]">
                     {loading ? (
                         <div className="p-12 text-center text-[var(--text-secondary)] italic">Connecting to support server...</div>
-                    ) : grievances.filter(g =>
-                        g.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        g.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        g.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        (g.Employee && `${g.Employee.firstName} ${g.Employee.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()))
-                    ).length === 0 ? (
-                        <div className="p-12 text-center text-[var(--text-secondary)] italic text-sm">
-                            {searchTerm ? `No results found for "${searchTerm}"` : 'No grievances recorded. Your workplace is healthy!'}
-                        </div>
+                    ) : grievances.length === 0 ? (
+                        <div className="p-12 text-center text-[var(--text-secondary)] italic text-sm">No grievances recorded. Your workplace is healthy!</div>
                     ) : (
-                        grievances
-                            .filter(g =>
-                                g.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                g.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                g.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                (g.Employee && `${g.Employee.firstName} ${g.Employee.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()))
-                            )
-                            .map((g) => (
-                                <div key={g.id} className="p-6 hover:bg-[var(--bg-secondary)]/30 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                    <div className="space-y-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[10px] font-black bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 uppercase tracking-tighter">
-                                                {g.category || 'General'}
-                                            </span>
-                                            <h4 className="font-bold text-[var(--text-primary)]">{g.subject}</h4>
-                                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter ${g.status === 'Resolved' ? 'bg-green-500/10 text-green-500' :
-                                                g.status === 'In Progress' ? 'bg-yellow-500/10 text-yellow-500' : 'bg-red-500/10 text-red-500'
-                                                }`}>
-                                                {g.status}
-                                            </span>
-                                        </div>
-                                        <p className="text-xs text-[var(--text-secondary)] line-clamp-2 max-w-2xl leading-relaxed">{g.description}</p>
-                                        <div className="flex items-center gap-4 mt-2">
-                                            <span className="text-[10px] text-[var(--text-secondary)] flex items-center gap-1">
-                                                <Clock className="w-3 h-3" />
-                                                {new Date(g.createdAt).toLocaleDateString()}
-                                            </span>
-                                            <span className="text-[10px] text-[var(--text-secondary)] font-bold italic">
-                                                - {g.isAnonymous ? 'Anonymous' : (g.Employee ? `${g.Employee.firstName} ${g.Employee.lastName}` : 'Public')}
-                                            </span>
-                                            {g.response && (
-                                                <span className="text-[10px] text-green-400 font-bold flex items-center gap-1">
-                                                    <MessageSquare className="w-3 h-3" />
-                                                    Has Response
-                                                </span>
-                                            )}
-                                        </div>
+                        grievances.map((g) => (
+                            <div key={g.id} className="p-6 hover:bg-[var(--bg-secondary)]/30 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-black bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 uppercase tracking-tighter">
+                                            {g.category || 'General'}
+                                        </span>
+                                        <h4 className="font-bold text-[var(--text-primary)]">{g.subject}</h4>
+                                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter ${g.status === 'Resolved' ? 'bg-green-500/10 text-green-500' :
+                                            g.status === 'In Progress' ? 'bg-yellow-500/10 text-yellow-500' : 'bg-red-500/10 text-red-500'
+                                            }`}>
+                                            {g.status}
+                                        </span>
                                     </div>
-                                    <div className="flex gap-2 self-end md:self-center">
-                                        {(user.role === 'Super Admin' || user.role === 'HR') && (
-                                            <button
-                                                onClick={() => openResolveModal(g)}
-                                                className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md"
-                                            >
-                                                Take Action
-                                            </button>
+                                    <p className="text-xs text-[var(--text-secondary)] line-clamp-2 max-w-2xl leading-relaxed">{g.description}</p>
+                                    <div className="flex items-center gap-4 mt-2">
+                                        <span className="text-[10px] text-[var(--text-secondary)] flex items-center gap-1">
+                                            <Clock className="w-3 h-3" />
+                                            {new Date(g.createdAt).toLocaleDateString()}
+                                        </span>
+                                        <span className="text-[10px] text-[var(--text-secondary)] font-bold italic">
+                                            - {g.isAnonymous ? 'Anonymous' : (g.Employee ? `${g.Employee.firstName} ${g.Employee.lastName}` : 'Public')}
+                                        </span>
+                                        {g.response && (
+                                            <span className="text-[10px] text-green-400 font-bold flex items-center gap-1">
+                                                <MessageSquare className="w-3 h-3" />
+                                                Has Response
+                                            </span>
                                         )}
-                                        <button
-                                            onClick={() => openResolveModal(g)}
-                                            className="bg-[var(--bg-secondary)] border border-[var(--border-color)] px-4 py-2 rounded-xl text-xs font-bold text-[var(--text-secondary)] hover:text-blue-400 hover:border-blue-400/50 transition-all"
-                                        >
-                                            View Details
-                                        </button>
                                     </div>
                                 </div>
-                            ))
+                                <div className="flex gap-2 self-end md:self-center">
+                                    {(user.role === 'Super Admin' || user.role === 'HR') && (
+                                        <button
+                                            onClick={() => openResolveModal(g)}
+                                            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md"
+                                        >
+                                            Take Action
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => openResolveModal(g)}
+                                        className="bg-[var(--bg-secondary)] border border-[var(--border-color)] px-4 py-2 rounded-xl text-xs font-bold text-[var(--text-secondary)] hover:text-blue-400 hover:border-blue-400/50 transition-all"
+                                    >
+                                        View Details
+                                    </button>
+                                </div>
+                            </div>
+                        ))
                     )}
                 </div>
             </div>

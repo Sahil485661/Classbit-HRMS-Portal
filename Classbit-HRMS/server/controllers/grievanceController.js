@@ -23,7 +23,7 @@ const submitGrievance = async (req, res) => {
             userId: user.id,
             title: 'New Grievance Raised',
             message: `${empName} has raised a new concern: "${subject}"`,
-            type: 'General',
+            type: 'Grievance',
             relatedId: grievance.id
         }));
 
@@ -77,7 +77,7 @@ const resolveGrievance = async (req, res) => {
                 userId: emp.userId,
                 title: 'Grievance Update',
                 message: `Your grievance regarding "${grievance.subject}" has been marked as ${status}.`,
-                type: 'General',
+                type: 'Grievance',
                 relatedId: grievance.id
             });
         }
