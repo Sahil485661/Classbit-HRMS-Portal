@@ -52,7 +52,7 @@ npm install
 # Start the server
 npm start
 ```
-##Project Folder Structure
+## Project Folder Structure
 Classbit-HRMS-Portal/
 │── src/
 │   ├── routes/
@@ -65,6 +65,6 @@ Classbit-HRMS-Portal/
 │── README.md
 
 ---
-##License
+## License
 This version is **100% in English** and ready for direct copy-paste.  
 Would you like me to also add **animated GIF placeholders** (like demo of login, dashboard, attendance) so your README looks even more dynamic?
