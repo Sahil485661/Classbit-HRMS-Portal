@@ -20,6 +20,8 @@ const Candidate = require('./Candidate');
 const ActivityLog = require('./ActivityLog');
 const Setting = require('./Setting');
 const Notification = require('./Notification');
+const AttendanceActivity = require('./AttendanceActivity');
+const TaskAttachment = require('./TaskAttachment');
 
 // Associations
 
@@ -36,51 +38,71 @@ Department.hasMany(Employee, { foreignKey: 'departmentId' });
 Employee.belongsTo(Department, { foreignKey: 'departmentId' });
 
 // Employee - Attendance (One-to-Many)
-Employee.hasMany(Attendance, { foreignKey: 'employeeId' });
+Employee.hasMany(Attendance, { foreignKey: 'employeeId', onDelete: 'CASCADE' });
 Attendance.belongsTo(Employee, { foreignKey: 'employeeId' });
+
+// Attendance - AttendanceActivity (One-to-Many)
+Attendance.hasMany(AttendanceActivity, { foreignKey: 'attendanceId', onDelete: 'CASCADE' });
+AttendanceActivity.belongsTo(Attendance, { foreignKey: 'attendanceId' });
 
 // Task - TaskAssignment (One-to-Many)
 Task.hasMany(TaskAssignment, { foreignKey: 'taskId', onDelete: 'CASCADE' });
 TaskAssignment.belongsTo(Task, { foreignKey: 'taskId' });
 
 // Employee - TaskAssignment (One-to-Many)
-Employee.hasMany(TaskAssignment, { foreignKey: 'employeeId' });
+Employee.hasMany(TaskAssignment, { foreignKey: 'employeeId', onDelete: 'CASCADE' });
 TaskAssignment.belongsTo(Employee, { foreignKey: 'employeeId' });
 
 // Task - User (CreatedBy)
-User.hasMany(Task, { foreignKey: 'createdBy' });
+User.hasMany(Task, { foreignKey: 'createdBy', onDelete: 'CASCADE' });
 Task.belongsTo(User, { as: 'Creator', foreignKey: 'createdBy' });
 
+// Task - TaskAttachment (One-to-Many)
+Task.hasMany(TaskAttachment, { foreignKey: 'taskId', onDelete: 'CASCADE' });
+TaskAttachment.belongsTo(Task, { foreignKey: 'taskId' });
+
+// User - TaskAttachment (Uploader)
+User.hasMany(TaskAttachment, { foreignKey: 'uploaderId', onDelete: 'CASCADE' });
+TaskAttachment.belongsTo(User, { as: 'Uploader', foreignKey: 'uploaderId' });
+
+// Task - Department (Assigned Department)
+Department.hasMany(Task, { foreignKey: 'assignedDepartmentId' });
+Task.belongsTo(Department, { as: 'AssignedDepartment', foreignKey: 'assignedDepartmentId' });
+
 // Employee - LeaveRequest (One-to-Many)
-Employee.hasMany(LeaveRequest, { foreignKey: 'employeeId' });
+Employee.hasMany(LeaveRequest, { foreignKey: 'employeeId', onDelete: 'CASCADE' });
 LeaveRequest.belongsTo(Employee, { foreignKey: 'employeeId' });
 
-Employee.hasOne(SalaryComponent, { foreignKey: 'employeeId' });
+Employee.hasOne(SalaryComponent, { foreignKey: 'employeeId', onDelete: 'CASCADE' });
 SalaryComponent.belongsTo(Employee, { foreignKey: 'employeeId' });
 
-Employee.hasMany(PayrollRecord, { foreignKey: 'employeeId' });
+Employee.hasMany(PayrollRecord, { foreignKey: 'employeeId', onDelete: 'CASCADE' });
 PayrollRecord.belongsTo(Employee, { foreignKey: 'employeeId' });
 
-Employee.hasMany(Loan, { foreignKey: 'employeeId' });
+Employee.hasMany(Loan, { foreignKey: 'employeeId', onDelete: 'CASCADE' });
 Loan.belongsTo(Employee, { foreignKey: 'employeeId' });
 
-Employee.hasMany(Grievance, { foreignKey: 'employeeId' });
+Employee.hasMany(Grievance, { foreignKey: 'employeeId', onDelete: 'CASCADE' });
 Grievance.belongsTo(Employee, { foreignKey: 'employeeId' });
 
-User.hasMany(Message, { foreignKey: 'senderId', as: 'SentMessages' });
-User.hasMany(Message, { foreignKey: 'recipientId', as: 'ReceivedMessages' });
+User.hasMany(Message, { foreignKey: 'senderId', as: 'SentMessages', onDelete: 'CASCADE' });
+User.hasMany(Message, { foreignKey: 'recipientId', as: 'ReceivedMessages', onDelete: 'CASCADE' });
 Message.belongsTo(User, { as: 'Sender', foreignKey: 'senderId' });
 Message.belongsTo(User, { as: 'Recipient', foreignKey: 'recipientId' });
 
-Employee.hasMany(Performance, { foreignKey: 'employeeId' });
+Employee.hasMany(Performance, { foreignKey: 'employeeId', onDelete: 'CASCADE' });
 Performance.belongsTo(Employee, { foreignKey: 'employeeId' });
 
 Job.hasMany(Candidate, { foreignKey: 'jobId' });
 Candidate.belongsTo(Job, { foreignKey: 'jobId' });
 
 // User - Notification (One-to-Many)
-User.hasMany(Notification, { foreignKey: 'userId' });
+User.hasMany(Notification, { foreignKey: 'userId', onDelete: 'CASCADE' });
 Notification.belongsTo(User, { foreignKey: 'userId' });
+
+// User - ActivityLog (One-to-Many)
+User.hasMany(ActivityLog, { foreignKey: 'userId', onDelete: 'CASCADE' });
+ActivityLog.belongsTo(User, { foreignKey: 'userId' });
 
 module.exports = {
     sequelize,
@@ -104,5 +126,7 @@ module.exports = {
     Candidate,
     ActivityLog,
     Setting,
-    Notification
+    Notification,
+    AttendanceActivity,
+    TaskAttachment
 };

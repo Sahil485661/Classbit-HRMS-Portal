@@ -34,6 +34,14 @@ const Task = sequelize.define('Task', {
     createdBy: {
         type: DataTypes.UUID, // Link to User (Manager/Admin)
         allowNull: false
+    },
+    assignmentType: {
+        type: DataTypes.STRING,
+        defaultValue: 'Single' // 'Single', 'Multiple', 'Department', 'All'
+    },
+    assignedDepartmentId: {
+        type: DataTypes.INTEGER,
+        allowNull: true // Only populated if assignmentType === 'Department'
     }
 }, {
     timestamps: true

@@ -48,7 +48,7 @@ const Sidebar = () => {
               flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all
               ${isActive
                                 ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20'
-                                : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                                : 'text-[var(--text-muted)] hover:bg-[var(--hover-bg)] hover:text-[var(--text-primary)]'
                             }
             `}
                     >
@@ -58,10 +58,10 @@ const Sidebar = () => {
                 ))}
             </nav>
 
-            <div className="p-4 border-t border-slate-800">
-                <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800">
-                    <p className="text-xs text-slate-500 uppercase font-semibold">User Role</p>
-                    <p className="text-sm text-slate-300 mt-1">{role}</p>
+            <div className="p-4 border-t border-[var(--border-color)]">
+                <div className="bg-[var(--bg-secondary)] p-4 rounded-xl border border-[var(--border-color)]">
+                    <p className="text-xs text-[var(--text-muted)] uppercase font-semibold">User Role</p>
+                    <p className="text-sm text-[var(--text-secondary)] mt-1">{role}</p>
                 </div>
             </div>
         </aside>

@@ -38,6 +38,10 @@ const Attendance = sequelize.define('Attendance', {
     note: {
         type: DataTypes.TEXT,
         allowNull: true
+    },
+    currentStatus: {
+        type: DataTypes.STRING,
+        defaultValue: 'Working'
     }
 }, {
     timestamps: true,

@@ -1,4 +1,4 @@
-const { Attendance, Employee, Department } = require('../models');
+const { Attendance, Employee, Department, AttendanceActivity } = require('../models');
 const { Op } = require('sequelize');
 
 const clockIn = async (req, res) => {
@@ -17,15 +17,93 @@ const clockIn = async (req, res) => {
             return res.status(400).json({ message: 'Already clocked in today' });
         }
 
+        const now = new Date();
+        const hour = now.getHours();
+        const minute = now.getMinutes();
+        
+        // Status logic: Late if after 9:15 AM
+        let status = 'Present';
+        if (hour > 9 || (hour === 9 && minute > 15)) {
+            status = 'Late';
+        }
+
         const attendance = await Attendance.create({
             employeeId,
             date: today,
-            checkIn: new Date(),
-            status: 'Present'
+            checkIn: now,
+            status: status,
+            currentStatus: 'Working'
+        });
+
+        // Start initial "Working" activity
+        await AttendanceActivity.create({
+            attendanceId: attendance.id,
+            type: 'Working',
+            startTime: now
         });
 
         res.status(201).json(attendance);
     } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const updateStatus = async (req, res) => {
+    try {
+        const { employeeId } = req.user;
+        const { type } = req.body; 
+        const today = new Date().toLocaleDateString('en-CA');
+
+        // Look for the most recent check-in that hasn't been checked out
+        const attendance = await Attendance.findOne({
+            where: { employeeId, checkOut: null },
+            order: [['date', 'DESC']]
+        });
+
+        if (!attendance) {
+            console.log('Attendance record not found for employee:', employeeId, 'on date:', today);
+            return res.status(404).json({ 
+                message: 'No active clock-in record found. Please clock in first.',
+                debug: { employeeId, today }
+            });
+        }
+
+        console.log('Found attendance record ID:', attendance.id);
+        if (attendance.checkOut) {
+            return res.status(400).json({ message: 'Already clocked out today' });
+        }
+
+        const now = new Date();
+
+        // 1. End current activity
+        const currentActivity = await AttendanceActivity.findOne({
+            where: { attendanceId: attendance.id, endTime: null }
+        });
+
+        if (currentActivity) {
+            console.log('Ending current activity:', currentActivity.type);
+            currentActivity.endTime = now;
+            const diffMs = currentActivity.endTime - currentActivity.startTime;
+            currentActivity.duration = Math.round(diffMs / (1000 * 60)); 
+            await currentActivity.save();
+        }
+
+        // 2. Start new activity
+        console.log('Starting new activity:', type);
+        await AttendanceActivity.create({
+            attendanceId: attendance.id,
+            type: type,
+            startTime: now
+        });
+
+        // 3. Update current status in Attendance
+        attendance.currentStatus = type;
+        await attendance.save();
+
+        console.log('Status updated successfully to:', type);
+        res.json(attendance);
+    } catch (error) {
+        console.error('Update status ERROR:', error);
         res.status(500).json({ message: error.message });
     }
 };
@@ -48,6 +126,19 @@ const clockOut = async (req, res) => {
         }
 
         attendance.checkOut = new Date();
+
+        // End current activity
+        const currentActivity = await AttendanceActivity.findOne({
+            where: { attendanceId: attendance.id, endTime: null }
+        });
+        if (currentActivity) {
+            currentActivity.endTime = attendance.checkOut;
+            const diffMs = currentActivity.endTime - currentActivity.startTime;
+            currentActivity.duration = Math.round(diffMs / (1000 * 60));
+            await currentActivity.save();
+        }
+
+        attendance.currentStatus = 'Closed';
 
         // Calculate working hours
         const checkIn = new Date(attendance.checkIn);
@@ -75,7 +166,8 @@ const getMyAttendance = async (req, res) => {
         const { employeeId } = req.user;
         const attendance = await Attendance.findAll({
             where: { employeeId },
-            order: [['date', 'DESC']]
+            include: [AttendanceActivity],
+            order: [['date', 'DESC'], [AttendanceActivity, 'startTime', 'ASC']]
         });
         res.json(attendance);
     } catch (error) {
@@ -89,14 +181,18 @@ const getAllAttendance = async (req, res) => {
         const where = {};
         if (date) where.date = date;
 
-        const include = [{ model: Employee, include: [Department] }];
+        const include = [
+            { model: Employee, include: [Department] },
+            { model: AttendanceActivity }
+        ];
         if (departmentId) {
             include[0].where = { departmentId };
         }
 
         const attendance = await Attendance.findAll({
             where,
-            include
+            include,
+            order: [['date', 'DESC'], [AttendanceActivity, 'startTime', 'ASC']]
         });
         res.json(attendance);
     } catch (error) {
@@ -107,6 +203,7 @@ const getAllAttendance = async (req, res) => {
 module.exports = {
     clockIn,
     clockOut,
+    updateStatus,
     getMyAttendance,
     getAllAttendance
 };

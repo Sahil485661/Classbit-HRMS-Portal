@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useSelector } from 'react-redux';
 import {
-    Search, Filter, Plus, MoreVertical,
-    Mail, Phone, Calendar, BadgeCheck
+    Search, Filter, Plus, MoreVertical, X,
+    Mail, Phone, Calendar, BadgeCheck, Trash2
 } from 'lucide-react';
 import Modal from '../../components/Modal';
 import AddEmployeeForm from './AddEmployeeForm';
 
 const EmployeeList = ({ title = "Employee Directory" }) => {
+    const { user } = useSelector((state) => state.auth);
     const [employees, setEmployees] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -59,6 +61,22 @@ const EmployeeList = ({ title = "Employee Directory" }) => {
             fetchEmployees();
         } catch (error) {
             alert('Failed to deactivate employee');
+        }
+    };
+
+    const handleFullDelete = async (id) => {
+        if (user.role !== 'Super Admin') return;
+        if (!window.confirm('CRITICAL: Are you sure you want to PERMANENTLY DELETE this employee and their associated user account? This cannot be undone.')) return;
+        if (!window.confirm('Confirming second time: All attendance logs, tasks, and personal data for this employee will be lost. Proceed?')) return;
+        
+        try {
+            const token = localStorage.getItem('token');
+            await axios.delete(`http://localhost:5000/api/employees/${id}/full`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            fetchEmployees();
+        } catch (error) {
+            alert(error.response?.data?.message || 'Failed to fully delete employee');
         }
     };
 
@@ -263,10 +281,10 @@ const EmployeeList = ({ title = "Employee Directory" }) => {
                 </div>
 
                 {/* Table */}
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto standard-table">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-slate-800/30 text-slate-400 text-xs uppercase tracking-wider">
+                            <tr className="bg-theme-header text-theme-muted text-xs uppercase tracking-wider">
                                 <th className="px-6 py-4 font-semibold">Employee</th>
                                 <th className="px-6 py-4 font-semibold">Employee ID</th>
                                 <th className="px-6 py-4 font-semibold">Department</th>
@@ -275,7 +293,7 @@ const EmployeeList = ({ title = "Employee Directory" }) => {
                                 <th className="px-6 py-4 font-semibold text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-800">
+                        <tbody className="divide-y divide-[var(--border-color)]">
                             {loading ? (
                                 <tr>
                                     <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
@@ -291,7 +309,7 @@ const EmployeeList = ({ title = "Employee Directory" }) => {
                                 </tr>
                             ) : (
                                 filteredEmployees.map((emp) => (
-                                    <tr key={emp.id} className="hover:bg-slate-800/20 transition-colors group">
+                                    <tr key={emp.id} className="hover:bg-[var(--hover-bg)] transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-xl bg-[var(--bg-secondary)] flex items-center justify-center text-blue-400 font-bold border border-[var(--border-color)] group-hover:border-blue-500/50 transition-colors">
@@ -323,7 +341,7 @@ const EmployeeList = ({ title = "Employee Directory" }) => {
                                                     className="p-2 text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all"
                                                     title="Edit Employee"
                                                 >
-                                                    <Plus className="w-4 h-4 rotate-45" />
+                                                    <MoreVertical className="w-4 h-4" />
                                                 </button>
                                                 {emp.status === 'Inactive' ? (
                                                     <button
@@ -339,7 +357,16 @@ const EmployeeList = ({ title = "Employee Directory" }) => {
                                                         className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
                                                         title="Deactivate Employee"
                                                     >
-                                                        <MoreVertical className="w-4 h-4" />
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                                {user?.role === 'Super Admin' && (
+                                                    <button
+                                                        onClick={() => handleFullDelete(emp.id)}
+                                                        className="p-2 text-slate-500 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all"
+                                                        title="PERMANENTLY DELETE EMPLOYEE"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
                                                     </button>
                                                 )}
                                             </div>

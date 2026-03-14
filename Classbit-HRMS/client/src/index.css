@@ -6,12 +6,14 @@
   --bg-primary: #ffffff;
   --bg-secondary: #f8fafc;
   --text-primary: #0f172a;
-  --text-secondary: #475569;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
   --border-color: #e2e8f0;
   --card-bg: #ffffff;
   --sidebar-bg: #f1f5f9;
   --accent-blue: #2563eb;
   --hover-bg: #f1f5f9;
+  --table-header-bg: #f1f5f9;
 }
 
 .dark {
@@ -19,11 +21,13 @@
   --bg-secondary: #0f172a;
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
+  --text-muted: #64748b;
   --border-color: #1e293b;
   --card-bg: #0f172a;
   --sidebar-bg: #020617;
   --accent-blue: #3b82f6;
   --hover-bg: #1e293b;
+  --table-header-bg: #1e293b;
 }
 
 @layer base {
@@ -49,6 +53,14 @@
     color: var(--text-secondary);
   }
 
+  .text-theme-muted {
+    color: var(--text-muted);
+  }
+
+  .bg-theme-header {
+    background-color: var(--table-header-bg);
+  }
+
   .border-theme {
     border-color: var(--border-color);
   }
@@ -70,4 +82,49 @@
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
+}
+
+/* Light mode text contrast improve */
+.light-mode body {
+  color: #000000 !important; /* Dark text */
+  background-color: #ffffff !important; /* Light background */
+}
+
+/* Mapping user requested classes to our theme variables and specific elements */
+.light-mode div[class*="card"], 
+.light-mode table, 
+.light-mode header {
+  background-color: #f9f9f9 !important; /* Softer background */
+  color: #222222 !important; /* Stronger text contrast */
+}
+
+.light-mode a {
+  color: #0056b3 !important; /* Clear link color */
+}
+
+/* Table section visibility enhance */
+.light-mode .standard-table {
+  background-color: #ffffff !important;
+  box-shadow: 0px 4px 12px rgba(0,0,0,0.1) !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+  color: #333333 !important;
+}
+
+.light-mode .standard-table th {
+  color: #222222 !important;
+  font-weight: 600 !important;
+  background-color: #f2f2f2 !important;
+}
+
+.light-mode .standard-table td {
+  color: #333333 !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+}
+
+.light-mode .standard-table tr:hover {
+  background-color: #eaf4ff !important;
+  transform: translateY(-2px) !important;
+  transition: all 0.2s ease-in-out !important;
 }

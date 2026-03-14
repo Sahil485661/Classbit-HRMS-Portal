@@ -130,7 +130,7 @@ const LeaveManagement = () => {
                 ))}
             </div>
 
-            <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-xl transition-colors">
+            <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-xl transition-colors standard-table">
                 <div className="flex border-b border-[var(--border-color)]">
                     <button
                         onClick={() => setActiveTab('balance')}
@@ -149,7 +149,7 @@ const LeaveManagement = () => {
                 <div className="p-0">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-slate-800/30 text-slate-400 text-[10px] uppercase tracking-widest">
+                            <tr className="bg-theme-header text-theme-muted text-[10px] uppercase tracking-widest">
                                 <th className="px-6 py-4">{user.role === 'Employee' ? 'Leave Type' : 'Applied By'}</th>
                                 <th className="px-6 py-4">Date Range</th>
                                 <th className="px-6 py-4">Days</th>
@@ -158,7 +158,7 @@ const LeaveManagement = () => {
                                 {user.role !== 'Employee' && <th className="px-6 py-4 text-center">Actions</th>}
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-800">
+                        <tbody className="divide-y divide-[var(--border-color)]">
                             {loading ? (
                                 <tr>
                                     <td colSpan="6" className="px-6 py-12 text-center text-[var(--text-secondary)] italic">Loading leave records...</td>

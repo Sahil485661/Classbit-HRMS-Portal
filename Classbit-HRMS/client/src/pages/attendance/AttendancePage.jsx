@@ -13,6 +13,18 @@ const AttendancePage = () => {
     const [filters, setFilters] = useState({ date: '', departmentId: '' });
     const [departments, setDepartments] = useState([]);
     const [showFilters, setShowFilters] = useState(false);
+    const [isClocking, setIsClocking] = useState(false);
+
+    // Derived State
+    const todayStr = new Date().toLocaleDateString('en-CA');
+    const todayRecord = attendance.find(rec => rec.date === todayStr && (user.role === 'Employee' ? true : rec.employeeId === user.employeeId));
+    
+    const stats = {
+        present: attendance.filter(r => r.status === 'Present' || r.status === 'Late').length,
+        late: attendance.filter(r => r.status === 'Late').length,
+        absent: attendance.filter(r => r.status === 'Absent').length,
+        hours: attendance.reduce((acc, r) => acc + parseFloat(r.workingHours || 0), 0).toFixed(1)
+    };
 
     useEffect(() => {
         fetchAttendance();
@@ -56,28 +68,85 @@ const AttendancePage = () => {
         }
     };
 
+    const handleStatusChange = async (type) => {
+        if (!todayRecord || todayRecord.checkOut) return;
+        setIsClocking(true);
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post('http://localhost:5000/api/attendance/update-status', { type }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            await fetchAttendance();
+        } catch (error) {
+            console.error('Status update error details:', error.response?.data || error.message);
+            alert(`Status update failed: ${error.response?.data?.message || error.message}`);
+        } finally {
+            setIsClocking(false);
+        }
+    };
+
     const handleClockIn = async () => {
+        if (todayRecord) return;
+        setIsClocking(true);
         try {
             const token = localStorage.getItem('token');
             await axios.post('http://localhost:5000/api/attendance/clock-in', {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            fetchAttendance();
+            await fetchAttendance();
         } catch (error) {
             alert(error.response?.data?.message || 'Clock-in failed');
+        } finally {
+            setIsClocking(false);
         }
     };
 
     const handleClockOut = async () => {
+        if (!todayRecord || todayRecord.checkOut) return;
+        setIsClocking(true);
         try {
             const token = localStorage.getItem('token');
             await axios.post('http://localhost:5000/api/attendance/clock-out', {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            fetchAttendance();
+            await fetchAttendance();
         } catch (error) {
             alert(error.response?.data?.message || 'Clock-out failed');
+        } finally {
+            setIsClocking(false);
         }
+    };
+
+    const getBreakSummary = (activities) => {
+        if (!activities || activities.length === 0) return null;
+        
+        const summary = activities.reduce((acc, act) => {
+            if (act.type === 'Working') return acc;
+            const type = act.type.replace(' Break', '');
+            const duration = act.duration || 0;
+            // If still active, calculate current duration
+            let currentDur = duration;
+            if (!act.endTime) {
+                const now = new Date();
+                const start = new Date(act.startTime);
+                currentDur = Math.round((now - start) / (1000 * 60));
+            }
+            acc[type] = (acc[type] || 0) + currentDur;
+            return acc;
+        }, {});
+
+        const items = Object.entries(summary).filter(([_, dur]) => dur > 0);
+        if (items.length === 0) return null;
+
+        return (
+            <div className="flex flex-wrap gap-1 mt-1">
+                {items.map(([type, dur]) => (
+                    <span key={type} className="bg-slate-500/5 text-slate-500 text-[8px] px-1.5 py-0.5 rounded border border-slate-500/10">
+                        {type}: {dur}m
+                    </span>
+                ))}
+            </div>
+        );
     };
 
     const getStatusBadge = (status) => {
@@ -85,6 +154,8 @@ const AttendancePage = () => {
             case 'Present': return <span className="bg-green-500/10 text-green-500 border border-green-500/20 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">Present</span>;
             case 'Late': return <span className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">Late</span>;
             case 'Absent': return <span className="bg-red-500/10 text-red-500 border border-red-500/20 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">Absent</span>;
+            case 'Tea Break': case 'Coffee Break': case 'Lunch Break': case 'Restroom Break': case 'Stretching Break': case 'Official Break':
+                return <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">{status}</span>;
             default: return <span className="bg-slate-500/10 text-slate-400 border border-slate-500/20 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">{status}</span>;
         }
     };
@@ -139,18 +210,44 @@ const AttendancePage = () => {
                         <div className="flex gap-3 mr-4 border-r border-[var(--border-color)] pr-4">
                             <button
                                 onClick={handleClockIn}
-                                className="bg-green-600 hover:bg-green-500 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-lg shadow-green-900/20 transition-all flex items-center gap-2"
+                                disabled={!!todayRecord || isClocking}
+                                className={`px-5 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${!!todayRecord || isClocking ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-900/20'}`}
                             >
                                 <CheckCircle className="w-4 h-4" />
-                                Clock In
+                                {todayRecord ? 'Clocked In' : 'Clock In'}
                             </button>
                             <button
                                 onClick={handleClockOut}
-                                className="bg-red-600 hover:bg-red-500 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-lg shadow-red-900/20 transition-all flex items-center gap-2"
+                                disabled={!todayRecord || todayRecord?.checkOut || isClocking}
+                                className={`px-5 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${!todayRecord || todayRecord?.checkOut || isClocking ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/20'}`}
                             >
                                 <XCircle className="w-4 h-4" />
-                                Clock Out
+                                {todayRecord?.checkOut ? 'Clocked Out' : 'Clock Out'}
                             </button>
+                        </div>
+                    )}
+                    {user.role === 'Employee' && todayRecord && !todayRecord.checkOut && (
+                        <div className="flex gap-2 mr-4 border-r border-[var(--border-color)] pr-4">
+                            {[
+                                { label: 'Working', value: 'Working', color: 'bg-blue-600', hover: 'hover:bg-blue-500' },
+                                { label: 'Tea', value: 'Tea Break', color: 'bg-amber-600', hover: 'hover:bg-amber-500' },
+                                { label: 'Coffee', value: 'Coffee Break', color: 'bg-orange-700', hover: 'hover:bg-orange-600' },
+                                { label: 'Lunch', value: 'Lunch Break', color: 'bg-rose-600', hover: 'hover:bg-rose-500' },
+                                { label: 'Restroom', value: 'Restroom Break', color: 'bg-indigo-600', hover: 'hover:bg-indigo-500' },
+                                { label: 'Stretching', value: 'Stretching Break', color: 'bg-emerald-600', hover: 'hover:bg-emerald-500' },
+                                { label: 'Official', value: 'Official Break', color: 'bg-purple-600', hover: 'hover:bg-purple-500' },
+                            ].map((opt) => (
+                                <button
+                                    key={opt.value}
+                                    onClick={() => handleStatusChange(opt.value)}
+                                    disabled={isClocking || todayRecord.currentStatus === opt.value}
+                                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${todayRecord.currentStatus === opt.value 
+                                        ? `${opt.color} text-white ring-2 ring-white/20 shadow-lg` 
+                                        : `bg-[var(--bg-secondary)] text-[var(--text-secondary)] ${opt.hover} hover:text-white border border-[var(--border-color)]`}`}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
                         </div>
                     )}
                     <button
@@ -211,10 +308,10 @@ const AttendancePage = () => {
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {[
-                    { label: 'Present Days', value: '18', icon: CheckCircle, color: 'text-green-400', bg: 'bg-green-400/10' },
-                    { label: 'Late Comings', value: '2', icon: Clock, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
-                    { label: 'Absent Days', value: '1', icon: XCircle, color: 'text-red-400', bg: 'bg-red-400/10' },
-                    { label: 'Working Hours', value: '144h', icon: Calendar, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+                    { label: 'Present Days', value: stats.present, icon: CheckCircle, color: 'text-green-400', bg: 'bg-green-400/10' },
+                    { label: 'Late Comings', value: stats.late, icon: Clock, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
+                    { label: 'Absent Days', value: stats.absent, icon: XCircle, color: 'text-red-400', bg: 'bg-red-400/10' },
+                    { label: 'Working Hours', value: `${stats.hours}h`, icon: Calendar, color: 'text-blue-400', bg: 'bg-blue-400/10' },
                 ].map((card, i) => (
                     <div key={i} className="bg-[var(--card-bg)] border border-[var(--border-color)] p-4 rounded-2xl flex items-center gap-4 transition-colors">
                         <div className={`${card.bg} p-2.5 rounded-xl`}>
@@ -228,11 +325,11 @@ const AttendancePage = () => {
                 ))}
             </div>
 
-            <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-xl transition-colors">
+            <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-xl transition-colors standard-table">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-[var(--bg-secondary)]/30 text-[var(--text-secondary)] text-[10px] uppercase tracking-widest">
+                            <tr className="bg-theme-header text-theme-muted text-[10px] uppercase tracking-widest">
                                 {user.role !== 'Employee' && <th className="px-6 py-4 font-semibold">Employee</th>}
                                 <th className="px-6 py-4 font-semibold">Date</th>
                                 <th className="px-6 py-4 font-semibold">Check In</th>
@@ -273,7 +370,15 @@ const AttendancePage = () => {
                                         </td>
                                         <td className="px-6 py-4 text-sm text-[var(--text-secondary)] font-mono">{rec.workingHours}h</td>
                                         <td className="px-6 py-4 text-sm text-[var(--text-secondary)] font-mono">{rec.overtime}h</td>
-                                        <td className="px-6 py-4">{getStatusBadge(rec.status)}</td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex flex-col gap-1">
+                                                {getStatusBadge(rec.status)}
+                                                {rec.currentStatus && rec.currentStatus !== rec.status && (
+                                                    <span className="text-[9px] font-mono text-slate-500 uppercase">Current: {rec.currentStatus}</span>
+                                                )}
+                                                {getBreakSummary(rec.AttendanceActivities)}
+                                            </div>
+                                        </td>
                                     </tr>
                                 ))
                             )}

@@ -164,6 +164,31 @@ const reactivateEmployee = async (req, res) => {
     }
 };
 
+const fullDeleteEmployee = async (req, res) => {
+    try {
+        const employee = await Employee.findByPk(req.params.id);
+        if (!employee) return res.status(404).json({ message: 'Employee not found' });
+
+        const userId = employee.userId;
+
+        // Delete User (Cascade will delete Employee)
+        // Note: Check for associations that might prevent deletion if needed.
+        // For simplicity, we assume CASCADE handles most things or we let it error if not.
+        const user = await User.findByPk(userId);
+        if (user) {
+            await user.destroy();
+        } else {
+            // If user missing for some reason, delete employee directly
+            await employee.destroy();
+        }
+
+        res.json({ message: 'Employee data fully deleted successfully' });
+    } catch (error) {
+        console.error('Error in fullDeleteEmployee:', error);
+        res.status(500).json({ message: 'Error deleting employee: ' + error.message });
+    }
+};
+
 module.exports = {
     getAllEmployees,
     getEmployeeById,
@@ -174,5 +199,6 @@ module.exports = {
     createRole,
     getDepartments,
     createDepartment,
-    reactivateEmployee
+    reactivateEmployee,
+    fullDeleteEmployee
 };

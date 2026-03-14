@@ -8,9 +8,11 @@ const ThemeToggle = () => {
         const theme = localStorage.getItem('theme') || 'dark';
         if (theme === 'dark') {
             document.documentElement.classList.add('dark');
+            document.documentElement.classList.remove('light-mode');
             setIsDark(true);
         } else {
             document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light-mode');
             setIsDark(false);
         }
     }, []);
@@ -18,10 +20,12 @@ const ThemeToggle = () => {
     const toggleTheme = () => {
         if (isDark) {
             document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light-mode');
             localStorage.setItem('theme', 'light');
             setIsDark(false);
         } else {
             document.documentElement.classList.add('dark');
+            document.documentElement.classList.remove('light-mode');
             localStorage.setItem('theme', 'dark');
             setIsDark(true);
         }

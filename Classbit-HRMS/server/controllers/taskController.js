@@ -1,5 +1,5 @@
 const { sequelize } = require('../config/db');
-const { Task, TaskAssignment, Employee, User, Department, Role, Notification } = require('../models');
+const { Task, TaskAssignment, Employee, User, Department, Role, Notification, TaskAttachment } = require('../models');
 const { Op } = require('sequelize');
 
 const createTask = async (req, res) => {
@@ -18,7 +18,9 @@ const createTask = async (req, res) => {
             description,
             deadline,
             priority,
-            createdBy: creator.id
+            createdBy: creator.id,
+            assignmentType: assignmentType || 'Single',
+            assignedDepartmentId: departmentId || null
         }, { transaction: t });
 
         let finalAssigneeIds = [];
@@ -83,12 +85,14 @@ const getMyTasks = async (req, res) => {
 
         let tasks;
         const commonInclude = [
-            { model: User, as: 'Creator', include: [{ model: Employee, attributes: ['firstName', 'lastName'] }] }
+            { model: User, as: 'Creator', include: [{ model: Employee, attributes: ['firstName', 'lastName'] }] },
+            { model: TaskAttachment },
+            { model: Department, as: 'AssignedDepartment', attributes: ['name'] }
         ];
 
         if (role === 'Super Admin' || role === 'HR') {
             tasks = await Task.findAll({
-                include: [...commonInclude, { model: TaskAssignment, include: [Employee] }],
+                include: [...commonInclude, { model: TaskAssignment, include: [{ model: Employee, attributes: ['id', 'firstName', 'lastName', 'designation'] }] }],
                 order: [['createdAt', 'DESC']]
             });
         } else if (role === 'Manager') {
@@ -97,7 +101,7 @@ const getMyTasks = async (req, res) => {
                     ...commonInclude,
                     {
                         model: TaskAssignment,
-                        include: [Employee]
+                        include: [{ model: Employee, attributes: ['id', 'firstName', 'lastName', 'designation'] }]
                     }
                 ],
                 where: {
@@ -117,7 +121,7 @@ const getMyTasks = async (req, res) => {
                         model: TaskAssignment,
                         where: { employeeId },
                         required: true,
-                        include: [Employee]
+                        include: [{ model: Employee, attributes: ['id', 'firstName', 'lastName', 'designation'] }]
                     }
                 ],
                 order: [['createdAt', 'DESC']]
@@ -144,6 +148,16 @@ const updateTaskStatus = async (req, res) => {
             return res.status(403).json({ message: 'Not authorized to update this task' });
         }
 
+        // Enforce forward-only progression for Employees
+        if (req.user.role === 'Employee') {
+            if (task.status === 'In Progress' && status === 'Open') {
+                return res.status(403).json({ message: 'Employees cannot move a task from In Progress back to Open.' });
+            }
+            if (task.status === 'Completed' && status !== 'Completed') {
+                return res.status(403).json({ message: 'Employees cannot reopen a completed task.' });
+            }
+        }
+
         task.status = status;
         await task.save();
 
@@ -153,8 +167,143 @@ const updateTaskStatus = async (req, res) => {
     }
 };
 
+const updateTaskDetails = async (req, res) => {
+    const t = await sequelize.transaction();
+    try {
+        const { title, description, deadline, priority, assignmentType, assigneeIds, departmentId } = req.body;
+        const { role, id: userId } = req.user;
+        const task = await Task.findByPk(req.params.id);
+
+        if (!task) {
+            await t.rollback();
+            return res.status(404).json({ message: 'Task not found' });
+        }
+
+        // Authorization check: User must be an Admin/HR/Manager, OR the actual creator of the task
+        if (role === 'Employee' && task.createdBy !== userId) {
+            await t.rollback();
+            return res.status(403).json({ message: 'Not authorized to edit this task' });
+        }
+
+        task.title = title || task.title;
+        task.description = description || task.description;
+        task.deadline = deadline || task.deadline;
+        task.priority = priority || task.priority;
+
+        if (assignmentType) {
+            let finalAssigneeIds = [];
+
+            if (assignmentType === 'Single' || assignmentType === 'Single Employee' || assignmentType === 'Multiple' || assignmentType === 'Multiple Employees') {
+                finalAssigneeIds = Array.isArray(assigneeIds) ? assigneeIds : (assigneeIds ? [assigneeIds] : []);
+                if (finalAssigneeIds.length === 0) {
+                    await t.rollback();
+                    return res.status(400).json({ message: 'No employees selected for assignment' });
+                }
+            } else if (assignmentType === 'Department' || assignmentType === 'Entire Department') {
+                if (!departmentId) {
+                    await t.rollback();
+                    return res.status(400).json({ message: 'Department must be specified' });
+                }
+                const employees = await Employee.findAll({ where: { departmentId: parseInt(departmentId) } });
+                finalAssigneeIds = employees.map(e => e.id);
+            } else if (assignmentType === 'All' || assignmentType === 'All Employees') {
+                const employees = await Employee.findAll({ where: { status: 'Active' } });
+                finalAssigneeIds = employees.map(e => e.id);
+            }
+
+            if (finalAssigneeIds.length === 0) {
+                await t.rollback();
+                return res.status(400).json({ message: 'No employees found for this criteria' });
+            }
+
+            task.assignmentType = assignmentType;
+            task.assignedDepartmentId = departmentId || null;
+
+            await TaskAssignment.destroy({ where: { taskId: task.id }, transaction: t });
+
+            const assignments = finalAssigneeIds.map(empId => ({
+                taskId: task.id,
+                employeeId: empId
+            }));
+
+            await TaskAssignment.bulkCreate(assignments, { transaction: t });
+        }
+
+        await task.save({ transaction: t });
+        await t.commit();
+
+        res.json(task);
+    } catch (error) {
+        await t.rollback();
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const uploadTaskAttachment = async (req, res) => {
+    try {
+        const taskId = req.params.id;
+        const uploaderId = req.user.id;
+        
+        // Ensure task exists
+        const task = await Task.findByPk(taskId);
+        if (!task) return res.status(404).json({ message: 'Task not found' });
+
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        // Create attachment record
+        const attachment = await TaskAttachment.create({
+            taskId: taskId,
+            uploaderId: uploaderId,
+            fileName: req.file.filename,
+            originalName: req.file.originalname,
+            fileUrl: `/uploads/${req.file.filename}`,
+            fileType: req.file.mimetype,
+            fileSize: req.file.size
+        });
+
+        // Fetch with uploader data
+        const attachmentWithMemeber = await TaskAttachment.findByPk(attachment.id, {
+            include: [{
+                model: User,
+                as: 'Uploader',
+                include: [{ model: Employee, attributes: ['firstName', 'lastName'] }]
+            }]
+        });
+
+        res.status(201).json(attachmentWithMemeber);
+    } catch (error) {
+        console.error('Upload Error:', error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const getTaskAttachments = async (req, res) => {
+    try {
+        const taskId = req.params.id;
+        
+        const attachments = await TaskAttachment.findAll({
+            where: { taskId },
+            include: [{
+                model: User,
+                as: 'Uploader',
+                include: [{ model: Employee, attributes: ['firstName', 'lastName'] }]
+            }],
+            order: [['createdAt', 'DESC']]
+        });
+
+        res.json(attachments);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     createTask,
     getMyTasks,
-    updateTaskStatus
+    updateTaskStatus,
+    updateTaskDetails,
+    uploadTaskAttachment,
+    getTaskAttachments
 };
