@@ -53,6 +53,7 @@ npm install
 npm start
 ```
 ## Project Folder Structure
+```
 Classbit-HRMS-Portal/
 │── src/
 │   ├── routes/
@@ -63,8 +64,7 @@ Classbit-HRMS-Portal/
 │── config/
 │── package.json
 │── README.md
-
+```
 ---
 ## License
-This version is **100% in English** and ready for direct copy-paste.  
-Would you like me to also add **animated GIF placeholders** (like demo of login, dashboard, attendance) so your README looks even more dynamic?
+This project is licensed under the MIT License.
