@@ -8,6 +8,8 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import EmployeeList from './pages/employees/EmployeeList';
 import AttendancePage from './pages/attendance/AttendancePage';
+import LateComingPage from './pages/attendance/LateComingPage';
+import OvertimePage from './pages/attendance/OvertimePage';
 import TaskBoard from './pages/work/TaskBoard';
 import PayrollPage from './pages/payroll/PayrollPage';
 import LeaveManagement from './pages/leave/LeaveManagement';
@@ -72,6 +74,18 @@ function App() {
           <Route path="/attendance" element={
             <PrivateRoute>
               <AppLayout><AttendancePage /></AppLayout>
+            </PrivateRoute>
+          } />
+
+          <Route path="/attendance/late-coming" element={
+            <PrivateRoute>
+              <AppLayout><LateComingPage /></AppLayout>
+            </PrivateRoute>
+          } />
+
+          <Route path="/attendance/overtime" element={
+            <PrivateRoute>
+              <AppLayout><OvertimePage /></AppLayout>
             </PrivateRoute>
           } />
 

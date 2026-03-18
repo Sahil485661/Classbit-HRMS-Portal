@@ -34,6 +34,26 @@ const Performance = sequelize.define('Performance', {
     feedback: {
         type: DataTypes.TEXT,
         allowNull: true
+    },
+    // 9-Box Grid metrics
+    potentialScore: { // 1: Low, 2: Moderate, 3: High
+        type: DataTypes.INTEGER,
+        defaultValue: 2,
+        validate: { min: 1, max: 3 }
+    },
+    performanceScore: { // 1: Below, 2: Meets, 3: Exceeds (Often derived from overallScore)
+        type: DataTypes.INTEGER,
+        defaultValue: 2,
+        validate: { min: 1, max: 3 }
+    },
+    // Self Appraisal
+    selfAppraisalText: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
+    employeeAgreed: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
     }
 }, {
     timestamps: true,

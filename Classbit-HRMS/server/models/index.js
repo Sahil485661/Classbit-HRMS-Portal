@@ -22,6 +22,8 @@ const Setting = require('./Setting');
 const Notification = require('./Notification');
 const AttendanceActivity = require('./AttendanceActivity');
 const TaskAttachment = require('./TaskAttachment');
+const Objective = require('./Objective');
+const Feedback = require('./Feedback');
 
 // Associations
 
@@ -100,6 +102,22 @@ Candidate.belongsTo(Job, { foreignKey: 'jobId' });
 User.hasMany(Notification, { foreignKey: 'userId', onDelete: 'CASCADE' });
 Notification.belongsTo(User, { foreignKey: 'userId' });
 
+// Employee - Objective (One-to-Many)
+Employee.hasMany(Objective, { foreignKey: 'employeeId', onDelete: 'CASCADE' });
+Objective.belongsTo(Employee, { foreignKey: 'employeeId' });
+
+// Employee - Feedback (Target)
+Employee.hasMany(Feedback, { foreignKey: 'targetEmployeeId', onDelete: 'CASCADE' });
+Feedback.belongsTo(Employee, { as: 'TargetEmployee', foreignKey: 'targetEmployeeId' });
+
+// User - Feedback (Author)
+User.hasMany(Feedback, { foreignKey: 'authorId', onDelete: 'CASCADE' });
+Feedback.belongsTo(User, { as: 'Author', foreignKey: 'authorId' });
+
+// User - Performance (Reviewer)
+User.hasMany(Performance, { foreignKey: 'reviewerId', onDelete: 'SET NULL' });
+Performance.belongsTo(User, { as: 'Reviewer', foreignKey: 'reviewerId' });
+
 // User - ActivityLog (One-to-Many)
 User.hasMany(ActivityLog, { foreignKey: 'userId', onDelete: 'CASCADE' });
 ActivityLog.belongsTo(User, { foreignKey: 'userId' });
@@ -128,5 +146,7 @@ module.exports = {
     Setting,
     Notification,
     AttendanceActivity,
-    TaskAttachment
+    TaskAttachment,
+    Objective,
+    Feedback
 };
