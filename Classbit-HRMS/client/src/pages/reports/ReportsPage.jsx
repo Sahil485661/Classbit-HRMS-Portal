@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import {
     FileBarChart, FileText, Download, Filter,
     Calendar, TrendingUp, Users, CreditCard
@@ -6,6 +7,52 @@ import {
 
 const ReportsPage = () => {
     const [reportType, setReportType] = useState('attendance');
+    const [loading, setLoading] = useState(false);
+
+    const handleExportCSV = async () => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            const res = await axios.get(`http://localhost:5000/api/reports/${reportType}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = res.data;
+            
+            if (!data || data.length === 0) {
+                alert('No data available for this report type.');
+                return;
+            }
+
+            const headers = Object.keys(data[0]);
+            const csvRows = [];
+            csvRows.push(headers.join(','));
+
+            for (const row of data) {
+                const values = headers.map(header => {
+                    const val = row[header] === null || row[header] === undefined ? '' : row[header];
+                    const escaped = ('' + val).replace(/"/g, '""');
+                    return `"${escaped}"`;
+                });
+                csvRows.push(values.join(','));
+            }
+
+            const csvString = csvRows.join('\n');
+            const blob = new Blob([csvString], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('hidden', '');
+            a.setAttribute('href', url);
+            a.setAttribute('download', `${reportType}_report_${new Date().getTime()}.csv`);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error('Error exporting report:', error);
+            alert('Failed to generate report. Only Admins or HR can execute this action.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const reportCards = [
         { id: 'attendance', name: 'Attendance Report', desc: 'Punch-in/out patterns and working hours.', icon: Calendar, color: 'text-blue-500', bg: 'bg-blue-500/10' },
@@ -58,13 +105,13 @@ const ReportsPage = () => {
                             <Filter className="w-4 h-4" />
                             Global Filters
                         </button>
-                        <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md">
+                        <button onClick={() => alert('PDF formatting is natively handled via CSV exports in this version.')} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md">
                             <Download className="w-4 h-4" />
                             Generate PDF
                         </button>
-                        <button className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md">
+                        <button onClick={handleExportCSV} disabled={loading} className={`flex items-center gap-2 ${loading ? 'bg-slate-500' : 'bg-emerald-600 hover:bg-emerald-500'} text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md`}>
                             <Download className="w-4 h-4" />
-                            Export CSV
+                            {loading ? 'Exporting...' : 'Export CSV'}
                         </button>
                     </div>
                 </div>
@@ -77,8 +124,8 @@ const ReportsPage = () => {
                         <h3 className="text-xl font-bold text-[var(--text-primary)] italic">Computational Pipeline Ready</h3>
                         <p className="text-sm text-[var(--text-secondary)] mt-3">Select your parameters above and initialize the generation process. Our engine will aggregate metadata across all modules.</p>
                     </div>
-                    <button className="bg-[var(--bg-secondary)] border border-blue-500/30 px-10 py-3 rounded-2xl text-blue-400 text-sm font-bold hover:bg-blue-500 hover:text-white transition-all">
-                        Initialize Engine
+                    <button onClick={handleExportCSV} disabled={loading} className="bg-[var(--bg-secondary)] border border-blue-500/30 px-10 py-3 rounded-2xl text-blue-400 text-sm font-bold hover:bg-blue-500 hover:text-white transition-all disabled:opacity-50">
+                        {loading ? 'Initializing...' : 'Initialize Engine'}
                     </button>
                 </div>
             </div>

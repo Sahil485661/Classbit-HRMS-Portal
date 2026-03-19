@@ -28,7 +28,12 @@ const getAdminStats = async (req, res) => {
             const dateStr = d.toLocaleDateString('en-CA');
             const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
 
-            const present = await Attendance.count({ where: { date: dateStr, status: 'Present' } });
+            const present = await Attendance.count({ 
+                where: { 
+                    date: dateStr, 
+                    status: { [Op.in]: ['Present', 'Late', 'Half Day'] } 
+                } 
+            });
             const absent = await Attendance.count({ where: { date: dateStr, status: 'Absent' } });
 
             attendanceData.push({ name: dayName, present, absent });

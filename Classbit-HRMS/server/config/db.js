@@ -8,7 +8,7 @@ const sequelize = new Sequelize(
     {
         host: process.env.DB_HOST,
         port: process.env.DB_PORT,
-        dialect: 'postgres',
+        dialect: 'mysql',
         logging: false, // Set to console.log to see SQL queries
         pool: {
             max: 5,
@@ -22,7 +22,7 @@ const sequelize = new Sequelize(
 const connectDB = async () => {
     try {
         await sequelize.authenticate();
-        console.log('PostgreSQL connected successfully.');
+        console.log('MySQL connected successfully.');
     } catch (error) {
         console.error('Unable to connect to the database:', error);
         process.exit(1);

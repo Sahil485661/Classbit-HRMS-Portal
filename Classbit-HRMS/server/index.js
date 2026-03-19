@@ -29,6 +29,7 @@ app.use('/api/performance', require('./routes/performanceRoutes'));
 app.use('/api/recruitment', require('./routes/recruitmentRoutes'));
 app.use('/api/activities', require('./routes/activityRoutes'));
 app.use('/api/setup', require('./routes/setupRoutes'));
+app.use('/api/reports', require('./routes/reportRoutes'));
 
 app.use('/uploads', express.static('uploads'));
 

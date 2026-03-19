@@ -13,7 +13,7 @@ const Performance = sequelize.define('Performance', {
     },
     reviewerId: {
         type: DataTypes.UUID,
-        allowNull: false
+        allowNull: true
     },
     month: {
         type: DataTypes.INTEGER,
@@ -24,7 +24,7 @@ const Performance = sequelize.define('Performance', {
         allowNull: false
     },
     ratings: {
-        type: DataTypes.JSONB, // { productivity: 5, communication: 4, technical: 4 }
+        type: DataTypes.JSON, // { productivity: 5, communication: 4, technical: 4 }
         allowNull: false
     },
     overallScore: {

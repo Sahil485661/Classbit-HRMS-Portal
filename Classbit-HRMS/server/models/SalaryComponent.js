@@ -20,11 +20,11 @@ const SalaryComponent = sequelize.define('SalaryComponent', {
         defaultValue: 'Monthly'
     },
     allowances: {
-        type: DataTypes.JSONB, // { HRA: 500, Travel: 200 }
+        type: DataTypes.JSON, // { HRA: 500, Travel: 200 }
         defaultValue: {}
     },
     deductions: {
-        type: DataTypes.JSONB, // { PF: 200, Tax: 100 }
+        type: DataTypes.JSON, // { PF: 200, Tax: 100 }
         defaultValue: {}
     },
     currency: {

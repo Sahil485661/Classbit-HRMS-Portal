@@ -13,7 +13,7 @@ const Setting = sequelize.define('Setting', {
         allowNull: false
     },
     value: {
-        type: DataTypes.JSONB,
+        type: DataTypes.JSON,
         allowNull: false
     },
     category: {

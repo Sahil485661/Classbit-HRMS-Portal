@@ -20,7 +20,7 @@ const Feedback = sequelize.define('Feedback', {
         allowNull: false
     },
     tags: {
-        type: DataTypes.JSONB, // e.g., ["#Leadership", "#Technical"]
+        type: DataTypes.JSON, // e.g., ["#Leadership", "#Technical"]
         defaultValue: []
     },
     type: {

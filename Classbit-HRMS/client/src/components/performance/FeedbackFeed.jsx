@@ -112,15 +112,22 @@ const FeedbackFeed = ({ feedbacks = [], onSubmit, employeesList = [], currentUse
                                                 {fb.text}
                                             </p>
                                             
-                                            {fb.tags && fb.tags.length > 0 && (
-                                                <div className="flex flex-wrap gap-2 mt-3">
-                                                    {fb.tags.map(tag => (
-                                                        <span key={tag} className={`flex items-center px-2 py-0.5 rounded border text-[10px] font-semibold ${getTagColor(tag)}`}>
-                                                            {getTagIcon(tag)}{tag}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            )}
+                                            {(() => {
+                                                let safeTags = [];
+                                                if (Array.isArray(fb.tags)) safeTags = fb.tags;
+                                                else if (typeof fb.tags === 'string') {
+                                                    try { safeTags = JSON.parse(fb.tags); } catch(e) { safeTags = []; }
+                                                }
+                                                return safeTags.length > 0 && (
+                                                    <div className="flex flex-wrap gap-2 mt-3">
+                                                        {safeTags.map(tag => (
+                                                            <span key={tag} className={`flex items-center px-2 py-0.5 rounded border text-[10px] font-semibold ${getTagColor(tag)}`}>
+                                                                {getTagIcon(tag)}{tag}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                     </div>
                                 );
