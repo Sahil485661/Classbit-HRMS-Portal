@@ -1,0 +1,62 @@
+[
+  {
+    "id": "ee2540ef-c21e-4155-bab5-de7411438333",
+    "email": "manager@classbit.com",
+    "password": "$2b$10$/NUTKHvF7CTp/upwvZKENexozDmmKdN3KxuhIG4Ty1mclYMC1nOBS",
+    "roleId": 3,
+    "isActive": true,
+    "lastLogin": null,
+    "createdAt": "2026-02-27T07:38:42.723Z",
+    "updatedAt": "2026-02-27T07:38:42.723Z"
+  },
+  {
+    "id": "caaee1a4-5f03-4e47-9232-b1827d478e67",
+    "email": "employee@classbit.com",
+    "password": "$2b$10$H3c.3hv7X8tD270jfMPpGOPZeunLZnIiRb1ALVOdlMh8IkgS9KJ6q",
+    "roleId": 4,
+    "isActive": true,
+    "lastLogin": null,
+    "createdAt": "2026-02-27T07:38:42.785Z",
+    "updatedAt": "2026-02-27T07:44:48.823Z"
+  },
+  {
+    "id": "a48e5e3c-a845-4bef-bfa2-5667c287c3cd",
+    "email": "nirbhay@mail.com",
+    "password": "$2b$10$xGbKqJOU743oVtpaC4gKkOrvX6DlMYiL8limsB.NSmVvoiW3Uu9kO",
+    "roleId": 4,
+    "isActive": true,
+    "lastLogin": null,
+    "createdAt": "2026-02-27T08:15:55.046Z",
+    "updatedAt": "2026-02-27T08:15:55.046Z"
+  },
+  {
+    "id": "fd159e5d-61ca-4821-b66f-c962e415d3a2",
+    "email": "sahil@mail.com",
+    "password": "$2b$10$eiQ2YTqga2qvqpYJySArKOdjHN.MWynMCMce7ECpKH9GpX7kCWMDW",
+    "roleId": 4,
+    "isActive": true,
+    "lastLogin": "2026-03-18T09:46:36.669Z",
+    "createdAt": "2026-02-27T08:14:58.911Z",
+    "updatedAt": "2026-03-18T09:46:36.669Z"
+  },
+  {
+    "id": "d07505e2-36c7-4e1f-bad9-ddcbd38e014a",
+    "email": "admin@classbit.com",
+    "password": "$2b$10$xii2qvo03wtZwbeMKRn1y.PBcw5wBzIwciSppVLGlzc7HMiipU996",
+    "roleId": 1,
+    "isActive": true,
+    "lastLogin": "2026-03-19T06:38:02.346Z",
+    "createdAt": "2026-02-27T07:38:42.644Z",
+    "updatedAt": "2026-03-19T06:38:02.347Z"
+  },
+  {
+    "id": "bf4169c3-47f4-4096-bebc-b4092276cfd3",
+    "email": "om@mail.com",
+    "password": "$2b$10$/1/jRYNC6jNtka2UEsPN8OVis.H9GpL.d5AeSMT2z.ZtclDVphFia",
+    "roleId": 4,
+    "isActive": true,
+    "lastLogin": "2026-03-19T06:43:45.952Z",
+    "createdAt": "2026-02-27T08:13:55.101Z",
+    "updatedAt": "2026-03-19T06:43:45.952Z"
+  }
+]

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
-import { Send, MessageSquare, Search, User, Phone, Video, MoreVertical, Paperclip, XCircle } from 'lucide-react';
+import { Send, MessageSquare, Search, User, MoreVertical, Paperclip, XCircle, Users } from 'lucide-react';
 
 const MessagesPage = () => {
     const { user } = useSelector((state) => state.auth);
@@ -12,9 +12,36 @@ const MessagesPage = () => {
     const [file, setFile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [departments, setDepartments] = useState([]);
     const [unreadCounts, setUnreadCounts] = useState({});
+    const [searchQuery, setSearchQuery] = useState(''); // Added to avoid naming collisions just in case
     const chatEndRef = useRef(null);
     const fileInputRef = useRef(null);
+    const prevUnreadRef = useRef(null);
+
+    const playNotificationSound = () => {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.05);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.2);
+        } catch (e) {
+            console.error("Audio play failed", e);
+        }
+    };
 
     const fetchUnreadCounts = async () => {
         try {
@@ -28,6 +55,13 @@ const MessagesPage = () => {
                     counts[msg.senderId] = (counts[msg.senderId] || 0) + 1;
                 }
             });
+            
+            const totalUnread = Object.values(counts).reduce((a, b) => a + b, 0);
+            if (prevUnreadRef.current !== null && totalUnread > prevUnreadRef.current) {
+                playNotificationSound();
+            }
+            prevUnreadRef.current = totalUnread;
+            
             setUnreadCounts(counts);
         } catch (error) {
             console.error('Error fetching unread counts:', error);
@@ -52,11 +86,12 @@ const MessagesPage = () => {
         const fetchChats = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const res = await axios.get('http://localhost:5000/api/employees', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                // Find all active employees to chat with
-                setChats(res.data.filter(e => e.id !== user.employeeId));
+                const [empRes, deptRes] = await Promise.all([
+                    axios.get('http://localhost:5000/api/employees', { headers: { Authorization: `Bearer ${token}` } }),
+                    axios.get('http://localhost:5000/api/employees/departments', { headers: { Authorization: `Bearer ${token}` } })
+                ]);
+                setChats(empRes.data.filter(e => e.id !== user.employeeId));
+                setDepartments(deptRes.data);
             } catch (error) {
                 console.error('Error fetching chats:', error);
             } finally {
@@ -80,7 +115,11 @@ const MessagesPage = () => {
             // Clear unread count locally when message thread is opened
             const target = chats.find(c => c.id === recipientId);
             if (target) {
-                setUnreadCounts(prev => ({ ...prev, [target.userId]: 0 }));
+                setUnreadCounts(prev => {
+                    const newCounts = { ...prev, [target.userId]: 0 };
+                    prevUnreadRef.current = Object.values(newCounts).reduce((a, b) => a + b, 0);
+                    return newCounts;
+                });
             }
         } catch (error) {
             console.error('Error fetching messages:', error);
@@ -90,7 +129,7 @@ const MessagesPage = () => {
     // Auto-refresh messages every 3 seconds if chat is active
     useEffect(() => {
         let interval;
-        if (activeChat) {
+        if (activeChat && !activeChat.isDepartment) {
             interval = setInterval(() => {
                 fetchMessages(activeChat.id);
             }, 3000);
@@ -105,7 +144,13 @@ const MessagesPage = () => {
         try {
             const token = localStorage.getItem('token');
             const formData = new FormData();
-            formData.append('recipientId', activeChat.id);
+            
+            if (activeChat.isDepartment) {
+                formData.append('departmentId', activeChat.id);
+            } else {
+                formData.append('recipientId', activeChat.id);
+            }
+
             formData.append('content', newMessage);
             if (file) {
                 formData.append('attachment', file);
@@ -118,9 +163,11 @@ const MessagesPage = () => {
                 }
             });
 
-            // Update state with new message
-            const updatedMessages = [...messages, res.data];
-            setMessages(updatedMessages);
+            if (activeChat.isDepartment) {
+                setMessages(prev => [...prev, { id: Date.now(), senderId: user.id, content: newMessage, createdAt: new Date().toISOString(), attachment: file ? file.name : null }]);
+            } else {
+                setMessages(prev => [...prev, res.data]);
+            }
             setNewMessage('');
             setFile(null);
             if (fileInputRef.current) fileInputRef.current.value = '';
@@ -153,13 +200,42 @@ const MessagesPage = () => {
                 <div className="flex-1 overflow-y-auto">
                     {loading ? (
                         <div className="p-6 text-center text-[var(--text-secondary)] text-sm italic">Syncing directory...</div>
-                    ) : chats.filter(chat =>
-                        `${chat.firstName} ${chat.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
-                    ).length === 0 ? (
-                        <div className="p-10 text-center text-[var(--text-secondary)] text-xs opacity-50">No coworkers found</div>
-                    ) : chats.filter(chat =>
-                        `${chat.firstName} ${chat.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
-                    ).map((chat) => (
+                    ) : (
+                        <>
+                            {/* Department Broadcasts */}
+                            {(user.role === 'Super Admin' || user.role === 'HR' || user.role === 'Manager') && departments.length > 0 && (
+                                <div className="mb-4">
+                                    <h3 className="px-6 py-2 text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest border-b border-[var(--border-color)]">Department Broadcasts</h3>
+                                    {departments.filter(d => d.name.toLowerCase().includes(searchTerm.toLowerCase())).map(dept => (
+                                        <div
+                                            key={`dept-${dept.id}`}
+                                            onClick={() => {
+                                                setMessages([]);
+                                                setActiveChat({ isDepartment: true, id: dept.id, name: dept.name });
+                                            }}
+                                            className={`p-4 flex items-center gap-4 cursor-pointer transition-all border-l-4 ${activeChat?.isDepartment && activeChat?.id === dept.id ? 'bg-indigo-600/10 border-indigo-500' : 'border-transparent hover:bg-[var(--bg-secondary)]/50'}`}
+                                        >
+                                            <div className="w-12 h-12 bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-500 border border-indigo-500/20 shadow-sm">
+                                                <Users className="w-5 h-5" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="font-bold text-[var(--text-primary)] text-sm truncate">{dept.name}</h4>
+                                                <p className="text-[11px] text-[var(--text-secondary)] truncate">Broadcast to department</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Direct Messages */}
+                            <h3 className="px-6 py-2 text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest border-b border-[var(--border-color)]">Direct Messages</h3>
+                            {chats.filter(chat =>
+                                `${chat.firstName} ${chat.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
+                            ).length === 0 ? (
+                                <div className="p-10 text-center text-[var(--text-secondary)] text-xs opacity-50">No coworkers found</div>
+                            ) : chats.filter(chat =>
+                                `${chat.firstName} ${chat.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
+                            ).map((chat) => (
                         <div
                             key={chat.id}
                             onClick={() => {
@@ -190,6 +266,8 @@ const MessagesPage = () => {
                             </div>
                         </div>
                     ))}
+                    </>
+                    )}
                 </div>
             </div>
 
@@ -199,21 +277,17 @@ const MessagesPage = () => {
                     {/* Header */}
                     <div className="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-secondary)]/5">
                         <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/20">
-                                {activeChat.firstName?.[0]}{activeChat.lastName?.[0]}
+                            <div className={`w-10 h-10 ${activeChat.isDepartment ? 'bg-indigo-600' : 'bg-blue-600'} rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/20`}>
+                                {activeChat.isDepartment ? <Users className="w-5 h-5"/> : `${activeChat.firstName?.[0]}${activeChat.lastName?.[0]}`}
                             </div>
                             <div>
-                                <h3 className="font-bold text-[var(--text-primary)]">{activeChat.firstName} {activeChat.lastName}</h3>
-                                <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest text-left">Active Now</p>
+                                <h3 className="font-bold text-[var(--text-primary)]">{activeChat.isDepartment ? `${activeChat.name} Department` : `${activeChat.firstName} ${activeChat.lastName}`}</h3>
+                                <p className={`text-[10px] ${activeChat.isDepartment ? 'text-indigo-500' : 'text-green-500'} font-bold uppercase tracking-widest text-left`}>
+                                    {activeChat.isDepartment ? 'Broadcast Channel' : 'Active Now'}
+                                </p>
                             </div>
                         </div>
                         <div className="flex gap-2">
-                            <button className="p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] rounded-xl transition-colors">
-                                <Video className="w-5 h-5" />
-                            </button>
-                            <button className="p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] rounded-xl transition-colors">
-                                <Phone className="w-5 h-5" />
-                            </button>
                             <button className="p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] rounded-xl transition-colors">
                                 <MoreVertical className="w-5 h-5" />
                             </button>
@@ -224,9 +298,19 @@ const MessagesPage = () => {
                     <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[var(--bg-secondary)]/5 custom-scrollbar">
                         {messages.length === 0 ? (
                             <div className="h-full flex flex-col items-center justify-center text-center px-20 text-[var(--text-secondary)]">
-                                <MessageSquare className="w-20 h-20 mb-6 opacity-20" />
-                                <h3 className="text-xl font-bold opacity-30">End-to-End Encrypted</h3>
-                                <p className="text-sm mt-2 opacity-30">Your business communication is secure and private.</p>
+                                {activeChat.isDepartment ? (
+                                    <>
+                                        <Users className="w-20 h-20 mb-6 opacity-20 text-indigo-500" />
+                                        <h3 className="text-xl font-bold opacity-50 text-[var(--text-primary)]">Department Broadcast</h3>
+                                        <p className="text-sm mt-2 opacity-50">Messages sent here will be delivered individually to every employee inside the {activeChat.name} department.</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <MessageSquare className="w-20 h-20 mb-6 opacity-20" />
+                                        <h3 className="text-xl font-bold opacity-30">End-to-End Encrypted</h3>
+                                        <p className="text-sm mt-2 opacity-30">Your business communication is secure and private.</p>
+                                    </>
+                                )}
                             </div>
                         ) : (
                             messages.map((msg) => (

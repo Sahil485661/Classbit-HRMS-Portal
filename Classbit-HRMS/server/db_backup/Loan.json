@@ -1,0 +1,14 @@
+[
+  {
+    "id": "9c2677c6-b239-4ed0-9046-b1cdf54c07c4",
+    "employeeId": "d0b3aa60-0a52-445f-8931-ebef60bbe30b",
+    "amount": "500.00",
+    "reason": "Mobile Recharge",
+    "repaymentMonths": 6,
+    "monthlyInstallment": "83.33",
+    "status": "Approved",
+    "remainingAmount": "500.00",
+    "createdAt": "2026-03-05T08:15:53.999Z",
+    "updatedAt": "2026-03-05T08:16:16.385Z"
+  }
+]

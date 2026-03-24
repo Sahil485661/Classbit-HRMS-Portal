@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createTask, getMyTasks, updateTaskStatus, updateTaskDetails, uploadTaskAttachment, getTaskAttachments } = require('../controllers/taskController');
+const { createTask, getMyTasks, updateTaskStatus, updateTaskDetails, uploadTaskAttachment, getTaskAttachments, getTaskDetails, addTaskComment } = require('../controllers/taskController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
 
@@ -8,6 +8,8 @@ router.use(protect);
 
 router.post('/', authorize('Super Admin', 'HR', 'Manager'), createTask);
 router.get('/my', getMyTasks);
+router.get('/:id', getTaskDetails);
+router.post('/:id/comments', addTaskComment);
 router.patch('/:id/status', updateTaskStatus);
 router.put('/:id', updateTaskDetails);
 

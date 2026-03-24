@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import {
     Plus, Search, Clock, AlertCircle,
     CheckCircle2, MessageSquare, Paperclip, MoreHorizontal, Download, UploadCloud, X, FileText, Image as ImageIcon, Users
@@ -11,6 +12,7 @@ import EditTaskForm from './EditTaskForm';
 
 const TaskBoard = () => {
     const { user } = useSelector((state) => state.auth);
+    const navigate = useNavigate();
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -152,6 +154,7 @@ const TaskBoard = () => {
                                 tasks.filter(t => t.status === column).map((task) => (
                                     <div
                                         key={task.id}
+                                        onClick={() => navigate(`/work/tasks/${task.id}`)}
                                         className="bg-[var(--card-bg)] border border-[var(--border-color)] p-5 rounded-2xl shadow-lg hover:border-blue-500/30 transition-all group cursor-pointer"
                                     >
                                         <div className="flex justify-between items-start mb-3">
@@ -242,7 +245,7 @@ const TaskBoard = () => {
                                                     <span>0</span>
                                                 </div>
                                                 <button 
-                                                    onClick={() => handleOpenAttachments(task)}
+                                                    onClick={(e) => { e.stopPropagation(); handleOpenAttachments(task); }}
                                                     className="flex items-center gap-1 text-[10px] hover:text-blue-400 transition-colors"
                                                     title="View Attachments"
                                                 >
@@ -260,7 +263,8 @@ const TaskBoard = () => {
                                             <select
                                                 className="bg-transparent text-[10px] text-blue-400 font-bold focus:outline-none disabled:opacity-50"
                                                 value={task.status}
-                                                onChange={(e) => updateTaskStatus(task.id, e.target.value)}
+                                                onClick={(e) => e.stopPropagation()}
+                                                onChange={(e) => { e.stopPropagation(); updateTaskStatus(task.id, e.target.value); }}
                                                 disabled={user.role === 'Employee' && task.status === 'Completed'}
                                             >
                                                 {(user.role !== 'Employee' || task.status === 'Open') && (

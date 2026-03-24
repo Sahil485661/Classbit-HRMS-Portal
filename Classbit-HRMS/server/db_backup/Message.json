@@ -1,0 +1,86 @@
+[
+  {
+    "id": "6ed672e6-71d9-483d-ad8f-80e94966414d",
+    "senderId": "d07505e2-36c7-4e1f-bad9-ddcbd38e014a",
+    "recipientId": "fd159e5d-61ca-4821-b66f-c962e415d3a2",
+    "departmentId": null,
+    "subject": "Chat Message",
+    "content": "hello",
+    "attachment": null,
+    "isRead": true,
+    "createdAt": "2026-03-16T08:08:56.259Z",
+    "updatedAt": "2026-03-16T08:09:49.877Z"
+  },
+  {
+    "id": "1fd23e77-c3ee-4ae2-937e-81be5006aa59",
+    "senderId": "fd159e5d-61ca-4821-b66f-c962e415d3a2",
+    "recipientId": "d07505e2-36c7-4e1f-bad9-ddcbd38e014a",
+    "departmentId": null,
+    "subject": "Chat Message",
+    "content": "bolo",
+    "attachment": null,
+    "isRead": true,
+    "createdAt": "2026-03-16T08:09:54.960Z",
+    "updatedAt": "2026-03-16T08:09:57.007Z"
+  },
+  {
+    "id": "1c95850c-446b-4f88-bdf9-05251b59b490",
+    "senderId": "d07505e2-36c7-4e1f-bad9-ddcbd38e014a",
+    "recipientId": "fd159e5d-61ca-4821-b66f-c962e415d3a2",
+    "departmentId": null,
+    "subject": "Chat Message",
+    "content": "where are you?",
+    "attachment": null,
+    "isRead": true,
+    "createdAt": "2026-03-18T09:46:17.859Z",
+    "updatedAt": "2026-03-18T09:46:47.832Z"
+  },
+  {
+    "id": "1d1ee160-bf6b-4023-b735-21cac70ccf5e",
+    "senderId": "fd159e5d-61ca-4821-b66f-c962e415d3a2",
+    "recipientId": "d07505e2-36c7-4e1f-bad9-ddcbd38e014a",
+    "departmentId": null,
+    "subject": "Chat Message",
+    "content": "I am on my way.",
+    "attachment": null,
+    "isRead": true,
+    "createdAt": "2026-03-18T09:46:57.251Z",
+    "updatedAt": "2026-03-18T09:46:57.354Z"
+  },
+  {
+    "id": "da5608d3-3fbc-4060-9f62-18b22d6c29c3",
+    "senderId": "fd159e5d-61ca-4821-b66f-c962e415d3a2",
+    "recipientId": "d07505e2-36c7-4e1f-bad9-ddcbd38e014a",
+    "departmentId": null,
+    "subject": "Chat Message",
+    "content": "",
+    "attachment": "uploads\\messages\\1773827233498-offer.pdf",
+    "isRead": true,
+    "createdAt": "2026-03-18T09:47:13.507Z",
+    "updatedAt": "2026-03-18T09:47:16.356Z"
+  },
+  {
+    "id": "4e06da74-c38b-486d-8ebd-c34fcbba6dbf",
+    "senderId": "d07505e2-36c7-4e1f-bad9-ddcbd38e014a",
+    "recipientId": "bf4169c3-47f4-4096-bebc-b4092276cfd3",
+    "departmentId": null,
+    "subject": "Chat Message",
+    "content": "dfdf",
+    "attachment": null,
+    "isRead": true,
+    "createdAt": "2026-02-27T09:44:49.977Z",
+    "updatedAt": "2026-03-19T06:45:03.135Z"
+  },
+  {
+    "id": "3d1d7125-b421-449b-9d61-7cde7857d4fc",
+    "senderId": "bf4169c3-47f4-4096-bebc-b4092276cfd3",
+    "recipientId": "d07505e2-36c7-4e1f-bad9-ddcbd38e014a",
+    "departmentId": null,
+    "subject": "Chat Message",
+    "content": "Good Afternoon Sir",
+    "attachment": null,
+    "isRead": true,
+    "createdAt": "2026-03-19T06:45:14.442Z",
+    "updatedAt": "2026-03-19T06:45:27.004Z"
+  }
+]

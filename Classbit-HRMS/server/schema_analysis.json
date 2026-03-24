@@ -1,0 +1,1345 @@
+{
+  "User": {
+    "tableName": "Users",
+    "attributes": {
+      "id": {
+        "type": "UUID",
+        "primaryKey": true,
+        "defaultValue": {},
+        "references": null
+      },
+      "email": {
+        "type": "STRING",
+        "allowNull": false,
+        "references": null
+      },
+      "password": {
+        "type": "STRING",
+        "allowNull": false,
+        "references": null
+      },
+      "roleId": {
+        "type": "INTEGER",
+        "allowNull": false,
+        "references": "Roles"
+      },
+      "isActive": {
+        "type": "BOOLEAN",
+        "defaultValue": true,
+        "references": null
+      },
+      "lastLogin": {
+        "type": "DATE",
+        "allowNull": true,
+        "references": null
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  },
+  "Role": {
+    "tableName": "Roles",
+    "attributes": {
+      "id": {
+        "type": "INTEGER",
+        "primaryKey": true,
+        "references": null
+      },
+      "name": {
+        "type": "STRING",
+        "allowNull": false,
+        "references": null
+      },
+      "description": {
+        "type": "STRING",
+        "allowNull": true,
+        "references": null
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  },
+  "Employee": {
+    "tableName": "Employees",
+    "attributes": {
+      "id": {
+        "type": "UUID",
+        "primaryKey": true,
+        "defaultValue": {},
+        "references": null
+      },
+      "userId": {
+        "type": "UUID",
+        "allowNull": false,
+        "references": "Users"
+      },
+      "employeeId": {
+        "type": "STRING",
+        "allowNull": false,
+        "references": null
+      },
+      "firstName": {
+        "type": "STRING",
+        "allowNull": false,
+        "references": null
+      },
+      "lastName": {
+        "type": "STRING",
+        "allowNull": false,
+        "references": null
+      },
+      "phone": {
+        "type": "STRING",
+        "allowNull": true,
+        "references": null
+      },
+      "gender": {
+        "type": "ENUM",
+        "allowNull": false,
+        "references": null
+      },
+      "dob": {
+        "type": "DATEONLY",
+        "allowNull": true,
+        "references": null
+      },
+      "joiningDate": {
+        "type": "DATEONLY",
+        "allowNull": false,
+        "references": null
+      },
+      "departmentId": {
+        "type": "INTEGER",
+        "allowNull": true,
+        "references": "Departments"
+      },
+      "designation": {
+        "type": "STRING",
+        "allowNull": true,
+        "references": null
+      },
+      "address": {
+        "type": "TEXT",
+        "allowNull": true,
+        "references": null
+      },
+      "emergencyContact": {
+        "type": "STRING",
+        "allowNull": true,
+        "references": null
+      },
+      "status": {
+        "type": "ENUM",
+        "defaultValue": "Active",
+        "references": null
+      },
+      "profilePicture": {
+        "type": "STRING",
+        "allowNull": true,
+        "references": null
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  },
+  "Department": {
+    "tableName": "Departments",
+    "attributes": {
+      "id": {
+        "type": "INTEGER",
+        "primaryKey": true,
+        "references": null
+      },
+      "name": {
+        "type": "STRING",
+        "allowNull": false,
+        "references": null
+      },
+      "description": {
+        "type": "TEXT",
+        "allowNull": true,
+        "references": null
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  },
+  "Attendance": {
+    "tableName": "Attendances",
+    "attributes": {
+      "id": {
+        "type": "BIGINT",
+        "primaryKey": true,
+        "references": null
+      },
+      "employeeId": {
+        "type": "UUID",
+        "allowNull": false,
+        "references": "Employees"
+      },
+      "date": {
+        "type": "DATEONLY",
+        "allowNull": false,
+        "references": null
+      },
+      "checkIn": {
+        "type": "DATE",
+        "allowNull": true,
+        "references": null
+      },
+      "checkOut": {
+        "type": "DATE",
+        "allowNull": true,
+        "references": null
+      },
+      "status": {
+        "type": "ENUM",
+        "defaultValue": "Present",
+        "references": null
+      },
+      "workingHours": {
+        "type": "DECIMAL",
+        "defaultValue": 0,
+        "references": null
+      },
+      "overtime": {
+        "type": "DECIMAL",
+        "defaultValue": 0,
+        "references": null
+      },
+      "note": {
+        "type": "TEXT",
+        "allowNull": true,
+        "references": null
+      },
+      "currentStatus": {
+        "type": "STRING",
+        "defaultValue": "Working",
+        "references": null
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  },
+  "Task": {
+    "tableName": "Tasks",
+    "attributes": {
+      "id": {
+        "type": "UUID",
+        "primaryKey": true,
+        "defaultValue": {},
+        "references": null
+      },
+      "title": {
+        "type": "STRING",
+        "allowNull": false,
+        "references": null
+      },
+      "description": {
+        "type": "TEXT",
+        "allowNull": true,
+        "references": null
+      },
+      "deadline": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "priority": {
+        "type": "ENUM",
+        "defaultValue": "Medium",
+        "references": null
+      },
+      "status": {
+        "type": "ENUM",
+        "defaultValue": "Open",
+        "references": null
+      },
+      "attachment": {
+        "type": "STRING",
+        "allowNull": true,
+        "references": null
+      },
+      "createdBy": {
+        "type": "UUID",
+        "allowNull": false,
+        "references": "Users"
+      },
+      "assignmentType": {
+        "type": "STRING",
+        "defaultValue": "Single",
+        "references": null
+      },
+      "assignedDepartmentId": {
+        "type": "INTEGER",
+        "allowNull": true,
+        "references": "Departments"
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  },
+  "TaskAssignment": {
+    "tableName": "TaskAssignments",
+    "attributes": {
+      "id": {
+        "type": "BIGINT",
+        "primaryKey": true,
+        "references": null
+      },
+      "taskId": {
+        "type": "UUID",
+        "allowNull": false,
+        "references": "Tasks"
+      },
+      "employeeId": {
+        "type": "UUID",
+        "allowNull": false,
+        "references": "Employees"
+      },
+      "assignedAt": {
+        "type": "DATE",
+        "defaultValue": {},
+        "references": null
+      }
+    }
+  },
+  "LeaveRequest": {
+    "tableName": "LeaveRequests",
+    "attributes": {
+      "id": {
+        "type": "UUID",
+        "primaryKey": true,
+        "defaultValue": {},
+        "references": null
+      },
+      "employeeId": {
+        "type": "UUID",
+        "allowNull": false,
+        "references": "Employees"
+      },
+      "leaveTypeId": {
+        "type": "INTEGER",
+        "allowNull": false,
+        "references": null
+      },
+      "startDate": {
+        "type": "DATEONLY",
+        "allowNull": false,
+        "references": null
+      },
+      "endDate": {
+        "type": "DATEONLY",
+        "allowNull": false,
+        "references": null
+      },
+      "reason": {
+        "type": "TEXT",
+        "allowNull": false,
+        "references": null
+      },
+      "status": {
+        "type": "ENUM",
+        "defaultValue": "Pending",
+        "references": null
+      },
+      "approvedBy": {
+        "type": "UUID",
+        "allowNull": true,
+        "references": null
+      },
+      "approvalDate": {
+        "type": "DATE",
+        "allowNull": true,
+        "references": null
+      },
+      "comment": {
+        "type": "TEXT",
+        "allowNull": true,
+        "references": null
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  },
+  "SalaryComponent": {
+    "tableName": "SalaryComponents",
+    "attributes": {
+      "id": {
+        "type": "INTEGER",
+        "primaryKey": true,
+        "references": null
+      },
+      "employeeId": {
+        "type": "UUID",
+        "allowNull": false,
+        "references": "Employees"
+      },
+      "baseSalary": {
+        "type": "DECIMAL",
+        "allowNull": false,
+        "references": null
+      },
+      "payType": {
+        "type": "ENUM",
+        "defaultValue": "Monthly",
+        "references": null
+      },
+      "allowances": {
+        "type": "JSONB",
+        "defaultValue": {},
+        "references": null
+      },
+      "deductions": {
+        "type": "JSONB",
+        "defaultValue": {},
+        "references": null
+      },
+      "currency": {
+        "type": "STRING",
+        "defaultValue": "USD",
+        "references": null
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  },
+  "PayrollRecord": {
+    "tableName": "PayrollRecords",
+    "attributes": {
+      "id": {
+        "type": "UUID",
+        "primaryKey": true,
+        "defaultValue": {},
+        "references": null
+      },
+      "employeeId": {
+        "type": "UUID",
+        "allowNull": false,
+        "references": "Employees"
+      },
+      "month": {
+        "type": "INTEGER",
+        "allowNull": false,
+        "references": null
+      },
+      "year": {
+        "type": "INTEGER",
+        "allowNull": false,
+        "references": null
+      },
+      "grossSalary": {
+        "type": "DECIMAL",
+        "allowNull": false,
+        "references": null
+      },
+      "totalDeductions": {
+        "type": "DECIMAL",
+        "allowNull": false,
+        "references": null
+      },
+      "netSalary": {
+        "type": "DECIMAL",
+        "allowNull": false,
+        "references": null
+      },
+      "status": {
+        "type": "ENUM",
+        "defaultValue": "Generated",
+        "references": null
+      },
+      "payslipUrl": {
+        "type": "STRING",
+        "allowNull": true,
+        "references": null
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  },
+  "Loan": {
+    "tableName": "Loans",
+    "attributes": {
+      "id": {
+        "type": "UUID",
+        "primaryKey": true,
+        "defaultValue": {},
+        "references": null
+      },
+      "employeeId": {
+        "type": "UUID",
+        "allowNull": false,
+        "references": "Employees"
+      },
+      "amount": {
+        "type": "DECIMAL",
+        "allowNull": false,
+        "references": null
+      },
+      "reason": {
+        "type": "TEXT",
+        "allowNull": false,
+        "references": null
+      },
+      "repaymentMonths": {
+        "type": "INTEGER",
+        "allowNull": false,
+        "references": null
+      },
+      "monthlyInstallment": {
+        "type": "DECIMAL",
+        "allowNull": false,
+        "references": null
+      },
+      "status": {
+        "type": "ENUM",
+        "defaultValue": "Pending",
+        "references": null
+      },
+      "remainingAmount": {
+        "type": "DECIMAL",
+        "defaultValue": 0,
+        "references": null
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  },
+  "Grievance": {
+    "tableName": "Grievances",
+    "attributes": {
+      "id": {
+        "type": "UUID",
+        "primaryKey": true,
+        "defaultValue": {},
+        "references": null
+      },
+      "employeeId": {
+        "type": "UUID",
+        "allowNull": false,
+        "references": "Employees"
+      },
+      "subject": {
+        "type": "STRING",
+        "allowNull": false,
+        "references": null
+      },
+      "isAnonymous": {
+        "type": "BOOLEAN",
+        "defaultValue": false,
+        "references": null
+      },
+      "description": {
+        "type": "TEXT",
+        "allowNull": false,
+        "references": null
+      },
+      "category": {
+        "type": "STRING",
+        "allowNull": true,
+        "references": null
+      },
+      "status": {
+        "type": "ENUM",
+        "defaultValue": "Open",
+        "references": null
+      },
+      "response": {
+        "type": "TEXT",
+        "allowNull": true,
+        "references": null
+      },
+      "resolvedBy": {
+        "type": "UUID",
+        "allowNull": true,
+        "references": null
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  },
+  "Transaction": {
+    "tableName": "Transactions",
+    "attributes": {
+      "id": {
+        "type": "UUID",
+        "primaryKey": true,
+        "defaultValue": {},
+        "references": null
+      },
+      "type": {
+        "type": "ENUM",
+        "allowNull": false,
+        "references": null
+      },
+      "category": {
+        "type": "STRING",
+        "allowNull": false,
+        "references": null
+      },
+      "amount": {
+        "type": "DECIMAL",
+        "allowNull": false,
+        "references": null
+      },
+      "date": {
+        "type": "DATEONLY",
+        "allowNull": false,
+        "references": null
+      },
+      "description": {
+        "type": "TEXT",
+        "allowNull": true,
+        "references": null
+      },
+      "paymentMethod": {
+        "type": "STRING",
+        "allowNull": true,
+        "references": null
+      },
+      "reference": {
+        "type": "STRING",
+        "allowNull": true,
+        "references": null
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  },
+  "Message": {
+    "tableName": "Messages",
+    "attributes": {
+      "id": {
+        "type": "UUID",
+        "primaryKey": true,
+        "defaultValue": {},
+        "references": null
+      },
+      "senderId": {
+        "type": "UUID",
+        "allowNull": false,
+        "references": "Users"
+      },
+      "recipientId": {
+        "type": "UUID",
+        "allowNull": true,
+        "references": "Users"
+      },
+      "departmentId": {
+        "type": "INTEGER",
+        "allowNull": true,
+        "references": null
+      },
+      "subject": {
+        "type": "STRING",
+        "allowNull": true,
+        "references": null
+      },
+      "content": {
+        "type": "TEXT",
+        "allowNull": false,
+        "references": null
+      },
+      "attachment": {
+        "type": "STRING",
+        "allowNull": true,
+        "references": null
+      },
+      "isRead": {
+        "type": "BOOLEAN",
+        "defaultValue": false,
+        "references": null
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  },
+  "Notice": {
+    "tableName": "Notices",
+    "attributes": {
+      "id": {
+        "type": "UUID",
+        "primaryKey": true,
+        "defaultValue": {},
+        "references": null
+      },
+      "type": {
+        "type": "ENUM",
+        "allowNull": false,
+        "references": null
+      },
+      "title": {
+        "type": "STRING",
+        "allowNull": true,
+        "references": null
+      },
+      "content": {
+        "type": "TEXT",
+        "allowNull": false,
+        "references": null
+      },
+      "author": {
+        "type": "STRING",
+        "allowNull": true,
+        "references": null
+      },
+      "expiryDate": {
+        "type": "DATEONLY",
+        "allowNull": true,
+        "references": null
+      },
+      "isActive": {
+        "type": "BOOLEAN",
+        "defaultValue": true,
+        "references": null
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  },
+  "Performance": {
+    "tableName": "Performances",
+    "attributes": {
+      "id": {
+        "type": "UUID",
+        "primaryKey": true,
+        "defaultValue": {},
+        "references": null
+      },
+      "employeeId": {
+        "type": "UUID",
+        "allowNull": false,
+        "references": "Employees"
+      },
+      "reviewerId": {
+        "type": "UUID",
+        "allowNull": false,
+        "references": "Users"
+      },
+      "month": {
+        "type": "INTEGER",
+        "allowNull": false,
+        "references": null
+      },
+      "year": {
+        "type": "INTEGER",
+        "allowNull": false,
+        "references": null
+      },
+      "ratings": {
+        "type": "JSONB",
+        "allowNull": false,
+        "references": null
+      },
+      "overallScore": {
+        "type": "DECIMAL",
+        "allowNull": false,
+        "references": null
+      },
+      "feedback": {
+        "type": "TEXT",
+        "allowNull": true,
+        "references": null
+      },
+      "potentialScore": {
+        "type": "INTEGER",
+        "defaultValue": 2,
+        "references": null
+      },
+      "performanceScore": {
+        "type": "INTEGER",
+        "defaultValue": 2,
+        "references": null
+      },
+      "selfAppraisalText": {
+        "type": "TEXT",
+        "allowNull": true,
+        "references": null
+      },
+      "employeeAgreed": {
+        "type": "BOOLEAN",
+        "defaultValue": false,
+        "references": null
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  },
+  "Job": {
+    "tableName": "Jobs",
+    "attributes": {
+      "id": {
+        "type": "UUID",
+        "primaryKey": true,
+        "defaultValue": {},
+        "references": null
+      },
+      "title": {
+        "type": "STRING",
+        "allowNull": false,
+        "references": null
+      },
+      "description": {
+        "type": "TEXT",
+        "allowNull": false,
+        "references": null
+      },
+      "requirements": {
+        "type": "TEXT",
+        "allowNull": true,
+        "references": null
+      },
+      "departmentId": {
+        "type": "INTEGER",
+        "allowNull": true,
+        "references": null
+      },
+      "status": {
+        "type": "ENUM",
+        "defaultValue": "Open",
+        "references": null
+      },
+      "type": {
+        "type": "ENUM",
+        "defaultValue": "Full-time",
+        "references": null
+      },
+      "salaryRange": {
+        "type": "STRING",
+        "allowNull": true,
+        "references": null
+      },
+      "expiryDate": {
+        "type": "DATEONLY",
+        "allowNull": true,
+        "references": null
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  },
+  "Candidate": {
+    "tableName": "Candidates",
+    "attributes": {
+      "id": {
+        "type": "UUID",
+        "primaryKey": true,
+        "defaultValue": {},
+        "references": null
+      },
+      "jobId": {
+        "type": "UUID",
+        "allowNull": false,
+        "references": "Jobs"
+      },
+      "firstName": {
+        "type": "STRING",
+        "allowNull": false,
+        "references": null
+      },
+      "lastName": {
+        "type": "STRING",
+        "allowNull": false,
+        "references": null
+      },
+      "email": {
+        "type": "STRING",
+        "allowNull": false,
+        "references": null
+      },
+      "phone": {
+        "type": "STRING",
+        "allowNull": true,
+        "references": null
+      },
+      "resume": {
+        "type": "STRING",
+        "allowNull": true,
+        "references": null
+      },
+      "status": {
+        "type": "ENUM",
+        "defaultValue": "Applied",
+        "references": null
+      },
+      "interviewDate": {
+        "type": "DATE",
+        "allowNull": true,
+        "references": null
+      },
+      "assessmentScore": {
+        "type": "INTEGER",
+        "allowNull": true,
+        "references": null
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  },
+  "ActivityLog": {
+    "tableName": "ActivityLogs",
+    "attributes": {
+      "id": {
+        "type": "UUID",
+        "primaryKey": true,
+        "defaultValue": {},
+        "references": null
+      },
+      "userId": {
+        "type": "UUID",
+        "allowNull": false,
+        "references": "Users"
+      },
+      "action": {
+        "type": "STRING",
+        "allowNull": false,
+        "references": null
+      },
+      "module": {
+        "type": "STRING",
+        "allowNull": false,
+        "references": null
+      },
+      "details": {
+        "type": "TEXT",
+        "allowNull": true,
+        "references": null
+      },
+      "ipAddress": {
+        "type": "STRING",
+        "allowNull": true,
+        "references": null
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  },
+  "Setting": {
+    "tableName": "Settings",
+    "attributes": {
+      "id": {
+        "type": "INTEGER",
+        "primaryKey": true,
+        "references": null
+      },
+      "key": {
+        "type": "STRING",
+        "allowNull": false,
+        "references": null
+      },
+      "value": {
+        "type": "JSONB",
+        "allowNull": false,
+        "references": null
+      },
+      "category": {
+        "type": "STRING",
+        "defaultValue": "General",
+        "references": null
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  },
+  "Notification": {
+    "tableName": "Notifications",
+    "attributes": {
+      "id": {
+        "type": "UUID",
+        "primaryKey": true,
+        "defaultValue": {},
+        "references": null
+      },
+      "userId": {
+        "type": "UUID",
+        "allowNull": false,
+        "references": "Users"
+      },
+      "title": {
+        "type": "STRING",
+        "allowNull": false,
+        "references": null
+      },
+      "message": {
+        "type": "TEXT",
+        "allowNull": false,
+        "references": null
+      },
+      "type": {
+        "type": "ENUM",
+        "defaultValue": "General",
+        "references": null
+      },
+      "isRead": {
+        "type": "BOOLEAN",
+        "defaultValue": false,
+        "references": null
+      },
+      "relatedId": {
+        "type": "STRING",
+        "allowNull": true,
+        "references": null
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  },
+  "AttendanceActivity": {
+    "tableName": "AttendanceActivities",
+    "attributes": {
+      "id": {
+        "type": "BIGINT",
+        "primaryKey": true,
+        "references": null
+      },
+      "attendanceId": {
+        "type": "BIGINT",
+        "allowNull": false,
+        "references": "Attendances"
+      },
+      "type": {
+        "type": "STRING",
+        "allowNull": false,
+        "references": null
+      },
+      "startTime": {
+        "type": "DATE",
+        "allowNull": false,
+        "defaultValue": {},
+        "references": null
+      },
+      "endTime": {
+        "type": "DATE",
+        "allowNull": true,
+        "references": null
+      },
+      "duration": {
+        "type": "INTEGER",
+        "allowNull": true,
+        "references": null
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  },
+  "TaskAttachment": {
+    "tableName": "TaskAttachments",
+    "attributes": {
+      "id": {
+        "type": "INTEGER",
+        "primaryKey": true,
+        "references": null
+      },
+      "taskId": {
+        "type": "UUID",
+        "allowNull": false,
+        "references": "Tasks"
+      },
+      "uploaderId": {
+        "type": "UUID",
+        "allowNull": false,
+        "references": "Users"
+      },
+      "fileName": {
+        "type": "STRING",
+        "allowNull": false,
+        "references": null
+      },
+      "originalName": {
+        "type": "STRING",
+        "allowNull": false,
+        "references": null
+      },
+      "fileUrl": {
+        "type": "STRING",
+        "allowNull": false,
+        "references": null
+      },
+      "fileType": {
+        "type": "STRING",
+        "allowNull": true,
+        "references": null
+      },
+      "fileSize": {
+        "type": "INTEGER",
+        "allowNull": true,
+        "references": null
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  },
+  "Objective": {
+    "tableName": "Objectives",
+    "attributes": {
+      "id": {
+        "type": "UUID",
+        "primaryKey": true,
+        "defaultValue": {},
+        "references": null
+      },
+      "employeeId": {
+        "type": "UUID",
+        "allowNull": false,
+        "references": "Employees"
+      },
+      "title": {
+        "type": "STRING",
+        "allowNull": false,
+        "references": null
+      },
+      "description": {
+        "type": "TEXT",
+        "allowNull": true,
+        "references": null
+      },
+      "progress": {
+        "type": "INTEGER",
+        "defaultValue": 0,
+        "references": null
+      },
+      "status": {
+        "type": "ENUM",
+        "defaultValue": "On-Track",
+        "references": null
+      },
+      "deadline": {
+        "type": "DATEONLY",
+        "allowNull": false,
+        "references": null
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  },
+  "Feedback": {
+    "tableName": "Feedbacks",
+    "attributes": {
+      "id": {
+        "type": "UUID",
+        "primaryKey": true,
+        "defaultValue": {},
+        "references": null
+      },
+      "targetEmployeeId": {
+        "type": "UUID",
+        "allowNull": false,
+        "references": "Employees"
+      },
+      "authorId": {
+        "type": "UUID",
+        "allowNull": false,
+        "references": "Users"
+      },
+      "text": {
+        "type": "TEXT",
+        "allowNull": false,
+        "references": null
+      },
+      "tags": {
+        "type": "JSONB",
+        "defaultValue": [],
+        "references": null
+      },
+      "type": {
+        "type": "ENUM",
+        "defaultValue": "Manager",
+        "references": null
+      },
+      "createdAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      },
+      "updatedAt": {
+        "type": "DATE",
+        "allowNull": false,
+        "references": null
+      }
+    }
+  }
+}

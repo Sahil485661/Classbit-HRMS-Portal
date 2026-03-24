@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "name": "Super Admin",
+    "description": "Full system access",
+    "createdAt": "2026-02-27T07:38:42.634Z",
+    "updatedAt": "2026-02-27T07:38:42.634Z"
+  },
+  {
+    "id": 2,
+    "name": "HR",
+    "description": "Human Resource Management",
+    "createdAt": "2026-02-27T07:38:42.634Z",
+    "updatedAt": "2026-02-27T07:38:42.634Z"
+  },
+  {
+    "id": 3,
+    "name": "Manager",
+    "description": "Department/Team management",
+    "createdAt": "2026-02-27T07:38:42.634Z",
+    "updatedAt": "2026-02-27T07:38:42.634Z"
+  },
+  {
+    "id": 4,
+    "name": "Employee",
+    "description": "Regular staff access",
+    "createdAt": "2026-02-27T07:38:42.634Z",
+    "updatedAt": "2026-02-27T07:38:42.634Z"
+  }
+]

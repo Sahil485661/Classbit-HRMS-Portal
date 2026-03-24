@@ -8,8 +8,33 @@ const NotificationHub = () => {
     const [notices, setNotices] = useState([]);
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
+    const prevUnreadRef = useRef(null);
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
+
+    const playNotificationSound = () => {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.05);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.2);
+        } catch (e) {
+            console.error("Audio play failed", e);
+        }
+    };
 
     const fetchData = async () => {
         try {
@@ -32,7 +57,14 @@ const NotificationHub = () => {
             const unreadNotices = allNotices.filter(n => new Date(n.createdAt) > last24h).length;
             const unreadNotifications = allNotifications.filter(n => !n.isRead).length;
 
-            setUnreadCount(unreadNotices + unreadNotifications);
+            const totalUnread = unreadNotices + unreadNotifications;
+            
+            if (prevUnreadRef.current !== null && totalUnread > prevUnreadRef.current) {
+                playNotificationSound();
+            }
+            prevUnreadRef.current = totalUnread;
+
+            setUnreadCount(totalUnread);
         } catch (error) {
             console.error('Failed to fetch notifications', error);
         }
@@ -50,6 +82,8 @@ const NotificationHub = () => {
             if (type === 'Grievance') navigate('/grievance');
             if (type === 'Leave') navigate('/leave');
             if (type === 'Task') navigate('/work');
+            
+            prevUnreadRef.current = Math.max(0, prevUnreadRef.current - 1);
             setIsOpen(false);
         } catch (e) { console.error(e); }
     };

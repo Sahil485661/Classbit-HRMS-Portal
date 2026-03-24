@@ -1,0 +1,28 @@
+[
+  {
+    "id": "98c0180a-3b5a-4d39-a452-431773a4488e",
+    "employeeId": "d0b3aa60-0a52-445f-8931-ebef60bbe30b",
+    "subject": "Id Card Not Issued",
+    "isAnonymous": false,
+    "description": "I have been working from last 2 months but still I did not receive my id card and I am facing problem in logging please issue the id card as soon as possible.",
+    "category": "General",
+    "status": "Closed",
+    "response": "we are unable to process your request. \nsorry for inconvenience.",
+    "resolvedBy": "d07505e2-36c7-4e1f-bad9-ddcbd38e014a",
+    "createdAt": "2026-03-05T08:30:20.078Z",
+    "updatedAt": "2026-03-05T08:33:44.793Z"
+  },
+  {
+    "id": "c47cdad9-90fe-4484-99ed-e33e4df81b1d",
+    "employeeId": "d0b3aa60-0a52-445f-8931-ebef60bbe30b",
+    "subject": "regarding complaint closure.",
+    "isAnonymous": false,
+    "description": "my complaint is closed without my problem resolution.",
+    "category": "General",
+    "status": "Open",
+    "response": null,
+    "resolvedBy": null,
+    "createdAt": "2026-03-05T08:35:17.475Z",
+    "updatedAt": "2026-03-05T08:35:17.475Z"
+  }
+]

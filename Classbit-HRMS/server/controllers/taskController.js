@@ -1,5 +1,5 @@
 const { sequelize } = require('../config/db');
-const { Task, TaskAssignment, Employee, User, Department, Role, Notification, TaskAttachment } = require('../models');
+const { Task, TaskAssignment, Employee, User, Department, Role, Notification, TaskAttachment, TaskActivity, TaskComment } = require('../models');
 const { Op } = require('sequelize');
 
 const createTask = async (req, res) => {
@@ -70,6 +70,13 @@ const createTask = async (req, res) => {
         }));
 
         await Notification.bulkCreate(notifications, { transaction: t });
+
+        await TaskActivity.create({
+            taskId: task.id,
+            userId: req.user.id,
+            action: 'Created',
+            details: `Task created and assigned to ${finalAssigneeIds.length} employee(s).`
+        }, { transaction: t });
 
         await t.commit();
         res.status(201).json(task);
@@ -158,8 +165,16 @@ const updateTaskStatus = async (req, res) => {
             }
         }
 
+        const oldStatus = task.status;
         task.status = status;
         await task.save();
+
+        await TaskActivity.create({
+            taskId: task.id,
+            userId: req.user.id,
+            action: 'Status Changed',
+            details: `Status updated from ${oldStatus} to ${status}.`
+        });
 
         res.json(task);
     } catch (error) {
@@ -230,6 +245,14 @@ const updateTaskDetails = async (req, res) => {
         }
 
         await task.save({ transaction: t });
+
+        await TaskActivity.create({
+            taskId: task.id,
+            userId: req.user.id,
+            action: 'Updated Details',
+            details: `Task details or assignments were updated.`
+        }, { transaction: t });
+
         await t.commit();
 
         res.json(task);
@@ -272,6 +295,13 @@ const uploadTaskAttachment = async (req, res) => {
             }]
         });
 
+        await TaskActivity.create({
+            taskId: taskId,
+            userId: req.user.id,
+            action: 'Attachment Uploaded',
+            details: `File attached: ${req.file.originalname}`
+        });
+
         res.status(201).json(attachmentWithMemeber);
     } catch (error) {
         console.error('Upload Error:', error);
@@ -299,11 +329,68 @@ const getTaskAttachments = async (req, res) => {
     }
 };
 
+const getTaskDetails = async (req, res) => {
+    try {
+        const taskId = req.params.id;
+        const task = await Task.findByPk(taskId, {
+            include: [
+                { model: User, as: 'Creator', include: [{ model: Employee, attributes: ['firstName', 'lastName'] }] },
+                { model: Department, as: 'AssignedDepartment', attributes: ['name'] },
+                { model: TaskAssignment, include: [{ model: Employee, attributes: ['id', 'firstName', 'lastName', 'designation', 'profilePicture'] }] },
+                { model: TaskAttachment, include: [{ model: User, as: 'Uploader', include: [{ model: Employee, attributes: ['firstName', 'lastName', 'profilePicture'] }] }] },
+                { model: TaskActivity, include: [{ model: User, as: 'User', include: [{ model: Employee, attributes: ['firstName', 'lastName', 'designation'] }] }] },
+                { model: TaskComment, include: [{ model: User, as: 'User', include: [{ model: Employee, attributes: ['firstName', 'lastName', 'designation', 'profilePicture'] }] }] }
+            ],
+            order: [
+                [TaskActivity, 'createdAt', 'DESC'],
+                [TaskAttachment, 'createdAt', 'DESC'],
+                [TaskComment, 'createdAt', 'ASC']
+            ]
+        });
+
+        if (!task) return res.status(404).json({ message: 'Task not found' });
+        res.json(task);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const addTaskComment = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { text } = req.body;
+
+        if (!text || text.trim() === '') {
+            return res.status(400).json({ message: 'Comment text cannot be empty' });
+        }
+
+        const task = await Task.findByPk(id);
+        if (!task) return res.status(404).json({ message: 'Task not found' });
+
+        const comment = await TaskComment.create({
+            taskId: id,
+            userId: req.user.id,
+            text
+        });
+
+        // Fetch back with user structure
+        const commentWithUser = await TaskComment.findByPk(comment.id, {
+            include: [{ model: User, as: 'User', include: [{ model: Employee, attributes: ['firstName', 'lastName', 'designation', 'profilePicture'] }] }]
+        });
+
+        res.status(201).json(commentWithUser);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     createTask,
     getMyTasks,
     updateTaskStatus,
     updateTaskDetails,
     uploadTaskAttachment,
-    getTaskAttachments
+    getTaskAttachments,
+    getTaskDetails,
+    addTaskComment
 };

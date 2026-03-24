@@ -1,0 +1,90 @@
+[
+  {
+    "id": "13d39612-904a-42fc-bc33-bba5acfecb20",
+    "userId": "bf4169c3-47f4-4096-bebc-b4092276cfd3",
+    "title": "New Task Assigned",
+    "message": "New task: \"demon task\" has been assigned to you.",
+    "type": "Task",
+    "isRead": true,
+    "relatedId": "4f14af74-7d74-4b7e-9c22-d61a2346f4a9",
+    "createdAt": "2026-02-27T08:53:24.003Z",
+    "updatedAt": "2026-02-27T08:54:04.370Z"
+  },
+  {
+    "id": "8d1c10bf-0a75-4f3b-b9dc-901ad95a9b17",
+    "userId": "d07505e2-36c7-4e1f-bad9-ddcbd38e014a",
+    "title": "New Grievance Raised",
+    "message": "Sahil Vishwakarma has raised a new concern: \"Id Card Not Issued\"",
+    "type": "General",
+    "isRead": false,
+    "relatedId": "98c0180a-3b5a-4d39-a452-431773a4488e",
+    "createdAt": "2026-03-05T08:30:20.097Z",
+    "updatedAt": "2026-03-05T08:30:20.097Z"
+  },
+  {
+    "id": "690d81a0-85af-445e-96e8-13424b1f5dc3",
+    "userId": "fd159e5d-61ca-4821-b66f-c962e415d3a2",
+    "title": "Grievance Update",
+    "message": "Your grievance regarding \"Id Card Not Issued\" has been marked as Resolved.",
+    "type": "General",
+    "isRead": false,
+    "relatedId": "98c0180a-3b5a-4d39-a452-431773a4488e",
+    "createdAt": "2026-03-05T08:32:19.804Z",
+    "updatedAt": "2026-03-05T08:32:19.804Z"
+  },
+  {
+    "id": "6e80e1cb-8e8d-417b-9220-ac3b657bedee",
+    "userId": "fd159e5d-61ca-4821-b66f-c962e415d3a2",
+    "title": "Grievance Update",
+    "message": "Your grievance regarding \"Id Card Not Issued\" has been marked as Closed.",
+    "type": "General",
+    "isRead": true,
+    "relatedId": "98c0180a-3b5a-4d39-a452-431773a4488e",
+    "createdAt": "2026-03-05T08:33:44.806Z",
+    "updatedAt": "2026-03-05T09:25:12.301Z"
+  },
+  {
+    "id": "b2537410-f36a-4495-a219-bf1de78856f3",
+    "userId": "fd159e5d-61ca-4821-b66f-c962e415d3a2",
+    "title": "Grievance Update",
+    "message": "Your grievance regarding \"Id Card Not Issued\" has been marked as In Progress.",
+    "type": "General",
+    "isRead": true,
+    "relatedId": "98c0180a-3b5a-4d39-a452-431773a4488e",
+    "createdAt": "2026-03-05T08:31:18.756Z",
+    "updatedAt": "2026-03-05T09:38:40.639Z"
+  },
+  {
+    "id": "f70c16d0-704a-4492-b6da-a3880259f507",
+    "userId": "d07505e2-36c7-4e1f-bad9-ddcbd38e014a",
+    "title": "New Grievance Raised",
+    "message": "Sahil Vishwakarma has raised a new concern: \"regarding complaint closure.\"",
+    "type": "General",
+    "isRead": true,
+    "relatedId": "c47cdad9-90fe-4484-99ed-e33e4df81b1d",
+    "createdAt": "2026-03-05T08:35:17.502Z",
+    "updatedAt": "2026-03-05T09:41:11.630Z"
+  },
+  {
+    "id": "6caffc56-0eb1-40b4-9ebc-18f6c1bf368d",
+    "userId": "d07505e2-36c7-4e1f-bad9-ddcbd38e014a",
+    "title": "New Leave Request",
+    "message": "Om  Soni has applied for leave.",
+    "type": "Leave",
+    "isRead": true,
+    "relatedId": "d3ade665-1097-43dc-84ef-991f0894dc59",
+    "createdAt": "2026-02-27T08:54:25.240Z",
+    "updatedAt": "2026-03-05T09:41:13.815Z"
+  },
+  {
+    "id": "c3fd36c5-f528-413e-9882-a362935739d0",
+    "userId": "bf4169c3-47f4-4096-bebc-b4092276cfd3",
+    "title": "New Task Assigned",
+    "message": "New task: \"Learn Reacrt\" has been assigned to you.",
+    "type": "Task",
+    "isRead": false,
+    "relatedId": "1954a05b-62d0-445c-95c3-7b1dd313f517",
+    "createdAt": "2026-03-19T06:40:09.765Z",
+    "updatedAt": "2026-03-19T06:40:09.765Z"
+  }
+]

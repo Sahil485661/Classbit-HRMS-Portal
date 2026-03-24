@@ -11,6 +11,7 @@ import AttendancePage from './pages/attendance/AttendancePage';
 import LateComingPage from './pages/attendance/LateComingPage';
 import OvertimePage from './pages/attendance/OvertimePage';
 import TaskBoard from './pages/work/TaskBoard';
+import TaskDetailsPage from './pages/work/TaskDetailsPage';
 import PayrollPage from './pages/payroll/PayrollPage';
 import LeaveManagement from './pages/leave/LeaveManagement';
 import PerformancePage from './pages/performance/PerformancePage';
@@ -92,6 +93,12 @@ function App() {
           <Route path="/work" element={
             <PrivateRoute>
               <AppLayout><TaskBoard /></AppLayout>
+            </PrivateRoute>
+          } />
+
+          <Route path="/work/tasks/:id" element={
+            <PrivateRoute>
+              <AppLayout><TaskDetailsPage /></AppLayout>
             </PrivateRoute>
           } />
 

@@ -22,6 +22,8 @@ const Setting = require('./Setting');
 const Notification = require('./Notification');
 const AttendanceActivity = require('./AttendanceActivity');
 const TaskAttachment = require('./TaskAttachment');
+const TaskActivity = require('./TaskActivity');
+const TaskComment = require('./TaskComment');
 const Objective = require('./Objective');
 const Feedback = require('./Feedback');
 
@@ -62,6 +64,22 @@ Task.belongsTo(User, { as: 'Creator', foreignKey: 'createdBy' });
 // Task - TaskAttachment (One-to-Many)
 Task.hasMany(TaskAttachment, { foreignKey: 'taskId', onDelete: 'CASCADE' });
 TaskAttachment.belongsTo(Task, { foreignKey: 'taskId' });
+
+// Task - TaskActivity (One-to-Many)
+Task.hasMany(TaskActivity, { foreignKey: 'taskId', onDelete: 'CASCADE' });
+TaskActivity.belongsTo(Task, { foreignKey: 'taskId' });
+
+// Task - TaskComment (One-to-Many)
+Task.hasMany(TaskComment, { foreignKey: 'taskId', onDelete: 'CASCADE' });
+TaskComment.belongsTo(Task, { foreignKey: 'taskId' });
+
+// User - TaskActivity
+User.hasMany(TaskActivity, { foreignKey: 'userId', onDelete: 'CASCADE' });
+TaskActivity.belongsTo(User, { as: 'User', foreignKey: 'userId' });
+
+// User - TaskComment
+User.hasMany(TaskComment, { foreignKey: 'userId', onDelete: 'CASCADE' });
+TaskComment.belongsTo(User, { as: 'User', foreignKey: 'userId' });
 
 // User - TaskAttachment (Uploader)
 User.hasMany(TaskAttachment, { foreignKey: 'uploaderId', onDelete: 'CASCADE' });
@@ -147,6 +165,8 @@ module.exports = {
     Notification,
     AttendanceActivity,
     TaskAttachment,
+    TaskActivity,
+    TaskComment,
     Objective,
     Feedback
 };
