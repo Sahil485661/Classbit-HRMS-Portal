@@ -10,7 +10,7 @@ const AttendancePage = () => {
     const { user } = useSelector((state) => state.auth);
     const [attendance, setAttendance] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filters, setFilters] = useState({ date: '', departmentId: '' });
+    const [filters, setFilters] = useState({ date: '', departmentId: '', status: '' });
     const [departments, setDepartments] = useState([]);
     const [showFilters, setShowFilters] = useState(false);
     const [isClocking, setIsClocking] = useState(false);
@@ -160,8 +160,13 @@ const AttendancePage = () => {
         }
     };
 
+    const filteredAttendance = attendance.filter(rec => {
+        if (filters.status && rec.status !== filters.status) return false;
+        return true;
+    });
+
     const handleExport = () => {
-        if (attendance.length === 0) return alert('No records to export');
+        if (filteredAttendance.length === 0) return alert('No records to export');
 
         const headers = user.role !== 'Employee'
             ? ['Employee Name', 'Employee ID', 'Date', 'Check In', 'Check Out', 'Working Hours', 'Overtime', 'Status']
@@ -169,7 +174,7 @@ const AttendancePage = () => {
 
         const csvContent = [
             headers.join(','),
-            ...attendance.map(rec => {
+            ...filteredAttendance.map(rec => {
                 const row = [];
                 if (user.role !== 'Employee') {
                     row.push(`"${rec.Employee?.firstName} ${rec.Employee?.lastName}"`);
@@ -280,6 +285,19 @@ const AttendancePage = () => {
                                 onChange={(e) => setFilters({ ...filters, date: e.target.value })}
                             />
                         </div>
+                        <div className="space-y-1.5 flex-1 min-w-[200px] text-left">
+                            <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Status</label>
+                            <select
+                                className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                value={filters.status}
+                                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                            >
+                                <option value="">All Statuses</option>
+                                <option value="Present">Present</option>
+                                <option value="Late">Late</option>
+                                <option value="Absent">Absent</option>
+                            </select>
+                        </div>
                         {user.role !== 'Employee' && (
                             <div className="space-y-1.5 flex-1 min-w-[200px] text-left">
                                 <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Department</label>
@@ -296,7 +314,7 @@ const AttendancePage = () => {
                             </div>
                         )}
                         <button
-                            onClick={() => setFilters({ date: '', departmentId: '' })}
+                            onClick={() => setFilters({ date: '', departmentId: '', status: '' })}
                             className="h-[38px] px-4 text-xs font-bold text-red-400 hover:text-red-300 transition-colors uppercase"
                         >
                             Reset
@@ -344,12 +362,12 @@ const AttendancePage = () => {
                                 <tr>
                                     <td colSpan="7" className="px-6 py-12 text-center text-slate-500 italic">Loading records...</td>
                                 </tr>
-                            ) : attendance.length === 0 ? (
+                            ) : filteredAttendance.length === 0 ? (
                                 <tr>
-                                    <td colSpan="7" className="px-6 py-12 text-center text-slate-500 italic">No attendance records found.</td>
+                                    <td colSpan="7" className="px-6 py-12 text-center text-slate-500 italic">No attendance records found for this filter.</td>
                                 </tr>
                             ) : (
-                                attendance.map((rec) => (
+                                filteredAttendance.map((rec) => (
                                     <tr key={rec.id} className="hover:bg-slate-800/20 transition-colors">
                                         {user.role !== 'Employee' && (
                                             <td className="px-6 py-4">

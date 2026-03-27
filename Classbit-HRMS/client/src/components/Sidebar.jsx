@@ -29,9 +29,7 @@ const Sidebar = () => {
             roles: ['Super Admin', 'HR', 'Manager', 'Employee'],
             subItems: [
                 { name: 'Attendance Log', path: '/attendance' },
-                { name: 'Leave', path: '/leave' },
-                { name: 'Late Coming', path: '/attendance/late-coming' },
-                { name: 'Overtime', path: '/attendance/overtime' }
+                { name: 'Leave', path: '/leave' }
             ]
         },
         { name: 'Work', icon: Briefcase, path: '/work', roles: ['Super Admin', 'HR', 'Manager', 'Employee'] },
@@ -44,7 +42,7 @@ const Sidebar = () => {
         { name: 'Messages', icon: MessageSquare, path: '/messages', roles: ['Super Admin', 'HR', 'Manager', 'Employee'] },
         { name: 'Managers', icon: UserCog, path: '/managers', roles: ['Super Admin'] },
         { name: 'Reports', icon: ClipboardList, path: '/reports', roles: ['Super Admin', 'HR'] },
-        { name: 'Setup', icon: Settings, path: '/setup', roles: ['Super Admin'] },
+        { name: 'Setup', icon: Settings, path: '/setup', roles: ['Super Admin', 'HR'] },
         { name: 'Activities', icon: History, path: '/activities', roles: ['Super Admin'] },
     ];
 

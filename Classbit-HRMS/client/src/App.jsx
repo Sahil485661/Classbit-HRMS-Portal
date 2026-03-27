@@ -4,12 +4,13 @@ import { Provider, useSelector } from 'react-redux';
 import { store } from './store';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
+import ThemeToggle from './components/ThemeToggle';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import EmployeeList from './pages/employees/EmployeeList';
+import AddEmployeePage from './pages/employees/AddEmployeePage';
+import EmployeeDetailsPage from './pages/employees/EmployeeDetailsPage';
 import AttendancePage from './pages/attendance/AttendancePage';
-import LateComingPage from './pages/attendance/LateComingPage';
-import OvertimePage from './pages/attendance/OvertimePage';
 import TaskBoard from './pages/work/TaskBoard';
 import TaskDetailsPage from './pages/work/TaskDetailsPage';
 import PayrollPage from './pages/payroll/PayrollPage';
@@ -25,13 +26,43 @@ import ReportsPage from './pages/reports/ReportsPage';
 import ActivitiesPage from './pages/activities/ActivitiesPage';
 
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null, errorInfo: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+    this.setState({ errorInfo });
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '2rem', color: 'red', background: 'white' }}>
+          <h2>Something went wrong in the UI.</h2>
+          <details style={{ whiteSpace: 'pre-wrap' }}>
+            {this.state.error && this.state.error.toString()}
+            <br />
+            {this.state.errorInfo && this.state.errorInfo.componentStack}
+          </details>
+          <button onClick={() => window.location.href='/employees'}>Go Back</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 const PrivateRoute = ({ children, roles }) => {
   const { user, token } = useSelector((state) => state.auth);
 
   if (!token) return <Navigate to="/login" />;
   if (roles && !roles.includes(user.role)) return <Navigate to="/dashboard" />;
 
-  return children;
+  return <ErrorBoundary>{children}</ErrorBoundary>;
 };
 
 const AppLayout = ({ children }) => {
@@ -40,6 +71,7 @@ const AppLayout = ({ children }) => {
 
   return (
     <div className="flex h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-hidden transition-colors duration-300">
+      <ThemeToggle />
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Navbar />
@@ -72,21 +104,27 @@ function App() {
             </PrivateRoute>
           } />
 
+          <Route path="/employees/:id" element={
+            <PrivateRoute roles={['Super Admin', 'HR', 'Manager']}>
+              <AppLayout><EmployeeDetailsPage /></AppLayout>
+            </PrivateRoute>
+          } />
+
+          <Route path="/employees/add" element={
+            <PrivateRoute roles={['Super Admin', 'HR', 'Manager']}>
+              <AppLayout><AddEmployeePage /></AppLayout>
+            </PrivateRoute>
+          } />
+
+          <Route path="/employees/edit/:id" element={
+            <PrivateRoute roles={['Super Admin', 'HR', 'Manager']}>
+              <AppLayout><AddEmployeePage /></AppLayout>
+            </PrivateRoute>
+          } />
+
           <Route path="/attendance" element={
             <PrivateRoute>
               <AppLayout><AttendancePage /></AppLayout>
-            </PrivateRoute>
-          } />
-
-          <Route path="/attendance/late-coming" element={
-            <PrivateRoute>
-              <AppLayout><LateComingPage /></AppLayout>
-            </PrivateRoute>
-          } />
-
-          <Route path="/attendance/overtime" element={
-            <PrivateRoute>
-              <AppLayout><OvertimePage /></AppLayout>
             </PrivateRoute>
           } />
 
@@ -121,7 +159,7 @@ function App() {
           } />
 
           <Route path="/setup" element={
-            <PrivateRoute roles={['Super Admin']}>
+            <PrivateRoute roles={['Super Admin', 'HR']}>
               <AppLayout><SettingsPage /></AppLayout>
             </PrivateRoute>
           } />

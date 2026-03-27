@@ -3,7 +3,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../slices/authSlice';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Bell, Search, User } from 'lucide-react';
-import ThemeToggle from './ThemeToggle';
 import NotificationHub from './NotificationHub';
 
 const Navbar = () => {
@@ -28,8 +27,6 @@ const Navbar = () => {
             </div>
 
             <div className="flex items-center gap-6">
-                <ThemeToggle />
-
                 <NotificationHub />
 
                 <div className="h-8 w-[1px] bg-[var(--border-color)]" />

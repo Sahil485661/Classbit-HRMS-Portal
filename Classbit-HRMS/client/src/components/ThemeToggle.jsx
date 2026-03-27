@@ -34,18 +34,13 @@ const ThemeToggle = () => {
     return (
         <button
             onClick={toggleTheme}
-            className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all border border-slate-700 group flex items-center gap-2"
+            className="fixed bottom-8 right-8 p-4 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all border border-slate-700 group flex items-center justify-center shadow-xl shadow-blue-900/20 hover:scale-110 z-[999] hover:shadow-2xl hover:shadow-blue-500/20"
+            title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
         >
             {isDark ? (
-                <>
-                    <Sun className="w-5 h-5 text-amber-400 group-hover:rotate-45 transition-transform" />
-                    <span className="text-xs font-bold uppercase tracking-wider hidden md:block">Light Mode</span>
-                </>
+                <Sun className="w-6 h-6 text-amber-400 group-hover:rotate-45 transition-transform" />
             ) : (
-                <>
-                    <Moon className="w-5 h-5 text-indigo-400 group-hover:-rotate-12 transition-transform" />
-                    <span className="text-xs font-bold uppercase tracking-wider hidden md:block">Dark Mode</span>
-                </>
+                <Moon className="w-6 h-6 text-indigo-400 group-hover:-rotate-12 transition-transform" />
             )}
         </button>
     );

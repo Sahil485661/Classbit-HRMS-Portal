@@ -8,18 +8,23 @@ import RoleManagement from './RoleManagement';
 import CompanySettings from './CompanySettings';
 import DepartmentManagement from './DepartmentManagement';
 import NoticeManagement from './NoticeManagement';
+import { useSelector } from 'react-redux';
 
 const SettingsPage = () => {
     const [currentView, setCurrentView] = useState('grid'); // 'grid', 'roles', 'company', etc.
+    const { user } = useSelector((state) => state.auth);
+    const isSuperAdmin = user?.role === 'Super Admin';
 
     const sections = [
-        { id: 'company', name: 'Company Details', icon: Building, desc: 'Manage company address, tax info, and logos.' },
-        { id: 'depts', name: 'Departments', icon: Briefcase, desc: 'Configure organizational units and branches.' },
-        { id: 'roles', name: 'Role Permissions', icon: Shield, desc: 'Configure what each system role can see and do.' },
-        { id: 'email', name: 'Email Settings', icon: Mail, desc: 'SMTP configuration and email templates.' },
-        { id: 'payroll', name: 'Payment Methods', icon: CreditCard, desc: 'Configure payroll disbursement accounts.' },
-        { id: 'logs', name: 'System Logs', icon: Database, desc: 'View audit trails and error logs.' },
-        { id: 'locales', name: 'Localization', icon: Globe, desc: 'Set default language, currency, and timezone.' },
+        ...(isSuperAdmin ? [
+            { id: 'company', name: 'Company Details', icon: Building, desc: 'Manage company address, tax info, and logos.' },
+            { id: 'depts', name: 'Departments', icon: Briefcase, desc: 'Configure organizational units and branches.' },
+            { id: 'roles', name: 'Role Permissions', icon: Shield, desc: 'Configure what each system role can see and do.' },
+            { id: 'email', name: 'Email Settings', icon: Mail, desc: 'SMTP configuration and email templates.' },
+            { id: 'payroll', name: 'Payment Methods', icon: CreditCard, desc: 'Configure payroll disbursement accounts.' },
+            { id: 'logs', name: 'System Logs', icon: Database, desc: 'View audit trails and error logs.' },
+            { id: 'locales', name: 'Localization', icon: Globe, desc: 'Set default language, currency, and timezone.' },
+        ] : []),
         { id: 'notices', name: 'Internal Notices', icon: Bell, desc: 'Manage system announcements and daily quotes.' },
     ];
 
@@ -89,21 +94,23 @@ const SettingsPage = () => {
             </div>
 
             {/* Global Actions Bar */}
-            <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-3xl p-8 shadow-xl mt-8 relative overflow-hidden transition-colors">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600" />
-                <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-6 text-left">Enterprise Administration</h3>
-                <div className="flex flex-wrap gap-4">
-                    <button className="bg-[var(--bg-secondary)] hover:bg-[var(--hover-bg)] text-[var(--text-primary)] px-6 py-3 rounded-2xl text-sm font-bold border border-[var(--border-color)] transition-all hover:scale-105">
-                        Lock Financial Year 2024-25
-                    </button>
-                    <button className="bg-[var(--bg-secondary)] hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] px-6 py-3 rounded-2xl text-sm font-bold border border-[var(--border-color)] transition-all hover:scale-105">
-                        Force System-wide Cache Clear
-                    </button>
-                    <button className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-6 py-3 rounded-2xl text-sm font-bold border border-red-500/20 transition-all">
-                        Immediate Audit Report
-                    </button>
+            {isSuperAdmin && (
+                <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-3xl p-8 shadow-xl mt-8 relative overflow-hidden transition-colors">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600" />
+                    <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-6 text-left">Enterprise Administration</h3>
+                    <div className="flex flex-wrap gap-4">
+                        <button className="bg-[var(--bg-secondary)] hover:bg-[var(--hover-bg)] text-[var(--text-primary)] px-6 py-3 rounded-2xl text-sm font-bold border border-[var(--border-color)] transition-all hover:scale-105">
+                            Lock Financial Year 2024-25
+                        </button>
+                        <button className="bg-[var(--bg-secondary)] hover:bg-[var(--hover-bg)] text-[var(--text-secondary)] px-6 py-3 rounded-2xl text-sm font-bold border border-[var(--border-color)] transition-all hover:scale-105">
+                            Force System-wide Cache Clear
+                        </button>
+                        <button className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-6 py-3 rounded-2xl text-sm font-bold border border-red-500/20 transition-all">
+                            Immediate Audit Report
+                        </button>
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };

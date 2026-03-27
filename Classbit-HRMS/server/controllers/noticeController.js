@@ -37,8 +37,21 @@ const deleteNotice = async (req, res) => {
     }
 };
 
+const updateNotice = async (req, res) => {
+    try {
+        const notice = await Notice.findByPk(req.params.id);
+        if (!notice) return res.status(404).json({ message: 'Notice not found' });
+        
+        await notice.update(req.body);
+        res.json(notice);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     createNotice,
     getActiveNotices,
-    deleteNotice
+    deleteNotice,
+    updateNotice
 };

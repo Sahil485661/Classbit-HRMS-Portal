@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import EventCalendar from '../../components/EventCalendar';
 import { useSelector } from 'react-redux';
 import {
     Clock, Briefcase, MessageSquare,
@@ -8,15 +9,25 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+import { useNavigate } from 'react-router-dom';
+
+const DEFAULT_QUOTES = [
+    { content: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+    { content: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
+    { content: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
+    { content: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt" },
+    { content: "Don't watch the clock; do what it does. Keep going.", author: "Sam Levenson" }
+];
+
 const EmployeeDashboard = () => {
     const { user } = useSelector((state) => state.auth);
+    const navigate = useNavigate();
     const [isClockedIn, setIsClockedIn] = useState(false);
     const [clockInTime, setClockInTime] = useState(null);
     const [myWork, setMyWork] = useState([]);
-    const [notices, setNotices] = useState([]);
     const [quote, setQuote] = useState(null);
-    const [leaves, setLeaves] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [permittedDesignations, setPermittedDesignations] = useState([]);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -38,9 +49,18 @@ const EmployeeDashboard = () => {
                 try {
                     const noticeRes = await axios.get('http://localhost:5000/api/notices', { headers });
                     const allNotices = Array.isArray(noticeRes.data) ? noticeRes.data : [];
-                    setNotices(allNotices.filter(n => n.type === 'Announcement' || n.type === 'Notice'));
-                    setQuote(allNotices.find(n => n.type === 'Quote'));
+                    const allQuotes = allNotices.filter(n => n.type === 'Quote');
+                    const combinedQuotes = allQuotes.length > 0 ? allQuotes : DEFAULT_QUOTES;
+                    
+                    const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
+                    setQuote(combinedQuotes[dayOfYear % combinedQuotes.length]);
                 } catch (e) { console.error('Notices fetch failed', e); }
+                
+                try {
+                    const settingsRes = await axios.get('http://localhost:5000/api/setup', { headers });
+                    const adminDesigs = settingsRes.data.find(s => s.key === 'eventAdminDesignations')?.value || '';
+                    setPermittedDesignations(adminDesigs.split(',').map(d => d.trim()).filter(d => d));
+                } catch (e) { console.error('Settings fetch failed', e); }
 
                 try {
                     const attRes = await axios.get('http://localhost:5000/api/attendance/my', { headers });
@@ -56,11 +76,6 @@ const EmployeeDashboard = () => {
                         setClockInTime(null);
                     }
                 } catch (e) { console.error('Attendance fetch failed', e); }
-
-                try {
-                    const leaveRes = await axios.get('http://localhost:5000/api/leave/my', { headers });
-                    setLeaves(Array.isArray(leaveRes.data) ? leaveRes.data : []);
-                } catch (e) { console.error('Leaves fetch failed', e); }
 
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
@@ -95,25 +110,6 @@ const EmployeeDashboard = () => {
     };
 
 
-
-    const calculateDays = (start, end) => {
-        const d1 = new Date(start);
-        const d2 = new Date(end);
-        const diff = Math.abs(d2 - d1);
-        return Math.ceil(diff / (1000 * 60 * 60 * 24)) + 1;
-    };
-
-    const getRemainingPTO = () => {
-        const currentYear = new Date().getFullYear();
-        const annualApproved = leaves
-            .filter(l =>
-                l.status === 'Approved' &&
-                Number(l.leaveTypeId) === 1 &&
-                new Date(l.startDate).getFullYear() === currentYear
-            )
-            .reduce((acc, curr) => acc + calculateDays(curr.startDate, curr.endDate), 0);
-        return Math.max(0, 20 - annualApproved);
-    };
 
     if (loading) return <div className="p-8 text-slate-400 italic">Initializing workplace...</div>;
 
@@ -154,15 +150,20 @@ const EmployeeDashboard = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 gap-8">
                 {/* Work List */}
-                <div className="lg:col-span-2 space-y-6">
+                <div className="space-y-6">
                     <div className="flex items-center justify-between">
                         <h3 className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
                             <Briefcase className="w-5 h-5 text-blue-400" />
                             My Assigned Work
                         </h3>
-                        <button className="text-sm text-blue-400 hover:underline">View All Tasks</button>
+                        <button 
+                            onClick={() => navigate('/work')}
+                            className="text-sm text-blue-500 font-bold tracking-wider hover:text-blue-400 hover:underline transition-colors"
+                        >
+                            View All Tasks
+                        </button>
                     </div>
 
                     <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-3xl overflow-hidden shadow-xl transition-colors">
@@ -210,42 +211,9 @@ const EmployeeDashboard = () => {
                     </div>
                 </div>
 
-                {/* Sidebar Widgets */}
-                <div className="space-y-8">
-                    {/* Announcements */}
-                    <section>
-                        <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-6 flex items-center gap-2">
-                            <AlertCircle className="w-5 h-5 text-amber-400" />
-                            Internal Notices
-                        </h3>
-                        <div className="space-y-4">
-                            {notices.length === 0 ? (
-                                <p className="text-sm text-slate-500 italic p-4 border border-dashed border-slate-800 rounded-2xl">No active announcements</p>
-                            ) : (
-                                notices.map((msg, idx) => (
-                                    <div key={msg.id} className="bg-[var(--card-bg)] border border-[var(--border-color)] p-5 rounded-2xl shadow-lg hover:border-amber-500/30 transition-all group">
-                                        <div className="flex justify-between items-start">
-                                            <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">{msg.title || 'Broadcast'}</span>
-                                            <span className="text-[10px] text-[var(--text-secondary)]">{new Date(msg.createdAt).toLocaleDateString()}</span>
-                                        </div>
-                                        <p className="text-sm text-[var(--text-secondary)] mt-3 leading-relaxed group-hover:text-[var(--text-primary)] transition-colors">{msg.content}</p>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </section>
-
-                    {/* Leave Quick Action */}
-                    <div className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-3xl p-8 text-white relative overflow-hidden shadow-2xl shadow-indigo-900/40">
-                        <div className="relative z-10">
-                            <h4 className="text-xs font-bold opacity-70 uppercase tracking-widest text-left">Available PTO</h4>
-                            <p className="text-4xl font-black mt-2 text-left">{getRemainingPTO()} Days</p>
-                            <button className="mt-6 bg-white/10 hover:bg-white/20 border border-white/20 px-6 py-2.5 rounded-xl text-xs font-bold backdrop-blur-md transition-all">
-                                Request Leave Now
-                            </button>
-                        </div>
-                        <Calendar className="absolute -bottom-6 -right-6 w-32 h-32 opacity-10 transform rotate-12" />
-                    </div>
+                {/* Event Calendar - Full Width Below */}
+                <div className="pt-2">
+                    <EventCalendar permittedDesignations={permittedDesignations} />
                 </div>
             </div>
         </div>

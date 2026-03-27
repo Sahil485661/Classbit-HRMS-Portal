@@ -5,19 +5,17 @@ import {
     Search, Filter, Plus, MoreVertical, X,
     Mail, Phone, Calendar, BadgeCheck, Trash2
 } from 'lucide-react';
-import Modal from '../../components/Modal';
-import AddEmployeeForm from './AddEmployeeForm';
+import { useNavigate } from 'react-router-dom';
 
 const EmployeeList = ({ title = "Employee Directory" }) => {
     const { user } = useSelector((state) => state.auth);
+    const navigate = useNavigate();
     const [employees, setEmployees] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [filters, setFilters] = useState({ departmentId: '', status: '' });
     const [departments, setDepartments] = useState([]);
     const [showFilters, setShowFilters] = useState(false);
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [editingEmployee, setEditingEmployee] = useState(null);
     const [importLoading, setImportLoading] = useState(false);
 
     const fetchEmployees = async () => {
@@ -183,10 +181,7 @@ const EmployeeList = ({ title = "Employee Directory" }) => {
                     </p>
                 </div>
                 <button
-                    onClick={() => {
-                        setEditingEmployee(null);
-                        setIsAddModalOpen(true);
-                    }}
+                    onClick={() => navigate('/employees/add')}
                     className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-blue-900/20"
                 >
                     <Plus className="w-5 h-5" />
@@ -311,17 +306,29 @@ const EmployeeList = ({ title = "Employee Directory" }) => {
                                 filteredEmployees.map((emp) => (
                                     <tr key={emp.id} className="hover:bg-[var(--hover-bg)] transition-colors group">
                                         <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-xl bg-[var(--bg-secondary)] flex items-center justify-center text-blue-400 font-bold border border-[var(--border-color)] group-hover:border-blue-500/50 transition-colors">
-                                                    {emp.firstName?.[0]}{emp.lastName?.[0]}
-                                                </div>
+                                            <div 
+                                                className="flex items-center gap-3 cursor-pointer group/link hover:opacity-80 transition-opacity"
+                                                onClick={() => navigate(`/employees/${emp.id}`)}
+                                            >
+                                                {emp.profilePicture ? (
+                                                    <img src={`http://localhost:5000/uploads/${emp.profilePicture}`} alt={`${emp.firstName} ${emp.lastName}`} className="w-10 h-10 rounded-xl object-cover border border-[var(--border-color)] group-hover/link:border-blue-500/50 transition-colors shadow-sm" />
+                                                ) : (
+                                                    <div className="w-10 h-10 rounded-xl bg-[var(--bg-secondary)] flex items-center justify-center text-blue-400 font-bold border border-[var(--border-color)] group-hover/link:border-blue-500/50 transition-colors shadow-sm">
+                                                        {emp.firstName?.[0]}{emp.lastName?.[0]}
+                                                    </div>
+                                                )}
                                                 <div>
-                                                    <p className="text-sm font-semibold text-[var(--text-primary)]">{emp.firstName} {emp.lastName}</p>
+                                                    <p className="text-sm font-semibold text-[var(--text-primary)] group-hover/link:text-blue-500 transition-colors">{emp.firstName} {emp.lastName}</p>
                                                     <p className="text-xs text-[var(--text-secondary)]">{emp.User?.email}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-slate-400 font-mono">{emp.employeeId}</td>
+                                        <td 
+                                            className="px-6 py-4 text-sm text-slate-400 font-mono cursor-pointer hover:text-blue-400 transition-colors"
+                                            onClick={() => navigate(`/employees/${emp.id}`)}
+                                        >
+                                            {emp.employeeId}
+                                        </td>
                                         <td className="px-6 py-4 text-sm text-slate-400">{emp.Department?.name || 'Unassigned'}</td>
                                         <td className="px-6 py-4 text-sm text-slate-400">{emp.designation}</td>
                                         <td className="px-6 py-4 text-center">
@@ -334,10 +341,7 @@ const EmployeeList = ({ title = "Employee Directory" }) => {
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end gap-2">
                                                 <button
-                                                    onClick={() => {
-                                                        setEditingEmployee(emp);
-                                                        setIsAddModalOpen(true);
-                                                    }}
+                                                    onClick={() => navigate(`/employees/edit/${emp.id}`, { state: { employee: emp } })}
                                                     className="p-2 text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-all"
                                                     title="Edit Employee"
                                                 >
@@ -388,27 +392,6 @@ const EmployeeList = ({ title = "Employee Directory" }) => {
                 </div>
             </div>
 
-            <Modal
-                isOpen={isAddModalOpen}
-                onClose={() => {
-                    setIsAddModalOpen(false);
-                    setEditingEmployee(null);
-                }}
-                title={editingEmployee ? "Edit Employee" : "Add New Employee"}
-            >
-                <AddEmployeeForm
-                    initialData={editingEmployee}
-                    onSuccess={() => {
-                        setIsAddModalOpen(false);
-                        setEditingEmployee(null);
-                        fetchEmployees();
-                    }}
-                    onCancel={() => {
-                        setIsAddModalOpen(false);
-                        setEditingEmployee(null);
-                    }}
-                />
-            </Modal>
         </div>
     );
 };

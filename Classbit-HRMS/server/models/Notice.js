@@ -27,6 +27,10 @@ const Notice = sequelize.define('Notice', {
         type: DataTypes.DATEONLY,
         allowNull: true
     },
+    eventDate: {
+        type: DataTypes.DATEONLY,
+        allowNull: true
+    },
     isActive: {
         type: DataTypes.BOOLEAN,
         defaultValue: true

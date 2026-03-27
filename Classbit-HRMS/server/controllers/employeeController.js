@@ -1,4 +1,4 @@
-const { Employee, User, Role, Department } = require('../models');
+const { Employee, User, Role, Department, Loan } = require('../models');
 
 const getAllEmployees = async (req, res) => {
     try {
@@ -19,7 +19,8 @@ const getEmployeeById = async (req, res) => {
         const employee = await Employee.findByPk(req.params.id, {
             include: [
                 { model: User, attributes: ['email', 'isActive', 'lastLogin'], include: [Role] },
-                { model: Department }
+                { model: Department },
+                { model: Loan }
             ]
         });
         if (!employee) return res.status(404).json({ message: 'Employee not found' });
@@ -34,8 +35,15 @@ const createEmployee = async (req, res) => {
         const {
             email, password, roleId,
             employeeId, firstName, lastName, gender,
-            joiningDate, departmentId, designation, status
+            joiningDate, departmentId, designation, status,
+            fatherName, motherName, identityType, identityNumber,
+            whatsappNumber, linkedinProfile, maritalStatus,
+            emergencyContact, emergencyContactName, nationality,
+            phone, dob, address, bankName, bankAccountNumber,
+            bankIfscCode, accountHolderName, upiId
         } = req.body;
+
+        const profilePicture = req.file ? req.file.filename : null;
 
         // Create User first
         const user = await User.create({
@@ -54,7 +62,26 @@ const createEmployee = async (req, res) => {
             joiningDate,
             departmentId,
             designation,
-            status
+            status,
+            fatherName,
+            motherName,
+            identityType,
+            identityNumber,
+            whatsappNumber,
+            linkedinProfile,
+            maritalStatus,
+            emergencyContact,
+            emergencyContactName,
+            nationality,
+            phone,
+            dob,
+            address,
+            bankName,
+            bankAccountNumber,
+            bankIfscCode,
+            accountHolderName,
+            upiId,
+            profilePicture
         });
 
         res.status(201).json(employee);
@@ -68,6 +95,10 @@ const updateEmployee = async (req, res) => {
         const { email, password, roleId, ...employeeData } = req.body;
         const employee = await Employee.findByPk(req.params.id, { include: [User] });
         if (!employee) return res.status(404).json({ message: 'Employee not found' });
+
+        if (req.file) {
+            employeeData.profilePicture = req.file.filename;
+        }
 
         // Update Employee
         await employee.update(employeeData);

@@ -64,6 +64,62 @@ const Employee = sequelize.define('Employee', {
     profilePicture: {
         type: DataTypes.STRING,
         allowNull: true
+    },
+    fatherName: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    motherName: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    identityType: {
+        type: DataTypes.ENUM('Aadhar', 'PAN', 'Voter ID', 'Driving License'),
+        allowNull: true
+    },
+    identityNumber: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    whatsappNumber: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    linkedinProfile: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    maritalStatus: {
+        type: DataTypes.ENUM('Single', 'Married', 'Divorced', 'Widowed'),
+        allowNull: true
+    },
+    emergencyContactName: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    nationality: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    bankName: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    bankAccountNumber: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    bankIfscCode: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    accountHolderName: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    upiId: {
+        type: DataTypes.STRING,
+        allowNull: true
     }
 }, {
     timestamps: true

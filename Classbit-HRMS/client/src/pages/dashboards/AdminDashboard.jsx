@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import EventCalendar from '../../components/EventCalendar';
 import {
     Users, FileText, Briefcase, AlertCircle,
     Search, CreditCard, ShoppingCart, TrendingUp
@@ -237,6 +238,13 @@ const AdminDashboard = () => {
                     </table>
                 </div>
             </div>
+
+            {/* Scheduling & Agenda Framework */}
+            <div className="pt-4">
+                <h3 className="text-xl font-bold text-[var(--text-primary)] mb-6 tracking-tight">System Calendar & Scheduling</h3>
+                <EventCalendar />
+            </div>
+
         </div>
     );
 };

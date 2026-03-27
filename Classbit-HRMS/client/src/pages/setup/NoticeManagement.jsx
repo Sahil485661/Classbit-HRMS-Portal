@@ -3,28 +3,38 @@ import axios from 'axios';
 import {
     Bell, Plus, Trash2, Calendar,
     Type, AlignLeft, AlertCircle, Quote as QuoteIcon,
-    Megaphone, CheckCircle2, X
+    Megaphone, CheckCircle2, X, Edit
 } from 'lucide-react';
 
 const NoticeManagement = () => {
     const [notices, setNotices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editingId, setEditingId] = useState(null);
+    const [settings, setSettings] = useState({ eventAdminDesignations: '' });
+    const [savingSettings, setSavingSettings] = useState(false);
     const [formData, setFormData] = useState({
         type: 'Announcement',
         title: '',
         content: '',
         expiryDate: '',
+        eventDate: '',
         isActive: true
     });
 
     const fetchNotices = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/notices', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setNotices(res.data);
+            const headers = { Authorization: `Bearer ${token}` };
+            const [noticesRes, settingsRes] = await Promise.all([
+                axios.get('http://localhost:5000/api/notices', { headers }),
+                axios.get('http://localhost:5000/api/setup', { headers }).catch(() => ({ data: [] }))
+            ]);
+            setNotices(noticesRes.data);
+            
+            const adminDesigs = settingsRes.data.find(s => s.key === 'eventAdminDesignations')?.value || '';
+            setSettings({ eventAdminDesignations: adminDesigs });
         } catch (error) {
             console.error('Error fetching notices:', error);
         } finally {
@@ -40,14 +50,24 @@ const NoticeManagement = () => {
         e.preventDefault();
         try {
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/notices', formData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const payload = { ...formData, eventDate: formData.eventDate || null, expiryDate: formData.expiryDate || null };
+            
+            if (isEditing) {
+                await axios.put(`http://localhost:5000/api/notices/${editingId}`, payload, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            } else {
+                await axios.post('http://localhost:5000/api/notices', payload, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            }
             setShowModal(false);
-            setFormData({ type: 'Announcement', title: '', content: '', expiryDate: '', isActive: true });
+            setFormData({ type: 'Announcement', title: '', content: '', expiryDate: '', eventDate: '', isActive: true });
+            setIsEditing(false);
+            setEditingId(null);
             fetchNotices();
         } catch (error) {
-            alert(error.response?.data?.message || 'Failed to create notice');
+            alert(error.response?.data?.message || 'Failed to save notice');
         }
     };
 
@@ -62,6 +82,20 @@ const NoticeManagement = () => {
         } catch (error) {
             alert('Failed to delete notice');
         }
+    };
+
+    const openEditModal = (notice) => {
+        setIsEditing(true);
+        setEditingId(notice.id);
+        setFormData({
+            type: notice.type || 'Announcement',
+            title: notice.title || '',
+            content: notice.content || '',
+            expiryDate: notice.expiryDate ? new Date(notice.expiryDate).toISOString().split('T')[0] : '',
+            eventDate: notice.eventDate ? new Date(notice.eventDate).toISOString().split('T')[0] : '',
+            isActive: notice.isActive !== undefined ? notice.isActive : true
+        });
+        setShowModal(true);
     };
 
     const getTypeIcon = (type) => {
@@ -84,13 +118,51 @@ const NoticeManagement = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center text-left">
+            <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-6 rounded-3xl shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div>
+                    <h3 className="text-sm font-bold text-[var(--text-primary)]">Event Calendar Permissions</h3>
+                    <p className="text-[10px] text-[var(--text-secondary)] mt-1 max-w-lg">Define which employee Designations (comma-separated, e.g. "Supervisor, Team Lead") are globally permitted to edit Event Calendars on their dashboard.</p>
+                </div>
+                <div className="flex gap-2 w-full md:w-auto">
+                    <input 
+                        type="text"
+                        placeholder="e.g. Manager, HR Admin"
+                        className="w-full md:w-64 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        value={settings.eventAdminDesignations}
+                        onChange={(e) => setSettings({ eventAdminDesignations: e.target.value })}
+                    />
+                    <button 
+                        onClick={async () => {
+                            setSavingSettings(true);
+                            try {
+                                const token = localStorage.getItem('token');
+                                await axios.post('http://localhost:5000/api/setup', 
+                                    { settings: [{ key: 'eventAdminDesignations', value: settings.eventAdminDesignations }] },
+                                    { headers: { Authorization: `Bearer ${token}` }}
+                                );
+                            } catch(e) { alert('Failed to save permissions'); }
+                            setSavingSettings(false);
+                        }}
+                        disabled={savingSettings}
+                        className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-md shrink-0"
+                    >
+                        {savingSettings ? 'Saving...' : 'Save Rule'}
+                    </button>
+                </div>
+            </div>
+
+            <div className="flex justify-between items-center text-left pt-6">
                 <div>
                     <h2 className="text-xl font-bold text-[var(--text-primary)] italic">Internal Notifications & Notices</h2>
-                    <p className="text-sm text-[var(--text-secondary)] mt-1">Broadcast announcements and daily quotes to all employees.</p>
+                    <p className="text-sm text-[var(--text-secondary)] mt-1">Broadcast announcements, daily quotes, and pinpoint events to all employees.</p>
                 </div>
                 <button
-                    onClick={() => setShowModal(true)}
+                    onClick={() => {
+                        setIsEditing(false);
+                        setEditingId(null);
+                        setFormData({ type: 'Announcement', title: '', content: '', expiryDate: '', eventDate: '', isActive: true });
+                        setShowModal(true);
+                    }}
                     className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-2xl flex items-center gap-2 font-bold transition-all shadow-lg shadow-blue-900/20"
                 >
                     <Plus className="w-4 h-4" />
@@ -120,12 +192,14 @@ const NoticeManagement = () => {
                                             <h4 className="font-bold text-[var(--text-primary)]">{notice.title || 'Broadcast Message'}</h4>
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={() => handleDelete(notice.id)}
-                                        className="text-slate-600 hover:text-red-500 transition-colors p-2"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => openEditModal(notice)} className="text-slate-600 hover:text-blue-500 transition-colors p-2" title="Edit Notice">
+                                            <Edit className="w-4 h-4" />
+                                        </button>
+                                        <button onClick={() => handleDelete(notice.id)} className="text-slate-600 hover:text-red-500 transition-colors p-2" title="Delete Notice">
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
                                 <p className="text-sm text-[var(--text-secondary)] line-clamp-3 text-left leading-relaxed">{notice.content}</p>
                                 <div className="mt-6 flex items-center justify-between">
@@ -152,9 +226,14 @@ const NoticeManagement = () => {
                         <div className="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
                             <h3 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
                                 <Megaphone className="w-5 h-5 text-blue-500" />
-                                New System Notice
+                                {isEditing ? 'Edit System Notice' : 'New System Notice'}
                             </h3>
-                            <button onClick={() => setShowModal(false)} className="text-slate-500 hover:text-white transition-colors">
+                            <button onClick={() => {
+                                setShowModal(false);
+                                setIsEditing(false);
+                                setEditingId(null);
+                                setFormData({ type: 'Announcement', title: '', content: '', expiryDate: '', eventDate: '', isActive: true });
+                            }} className="text-slate-500 hover:text-[var(--text-primary)] transition-colors">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
@@ -179,6 +258,18 @@ const NoticeManagement = () => {
                                         className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                                         value={formData.expiryDate}
                                         onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-2 block">Link to Event Date (Optional)</label>
+                                    <input
+                                        type="date"
+                                        className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                        value={formData.eventDate}
+                                        onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })}
                                     />
                                 </div>
                             </div>
@@ -211,19 +302,15 @@ const NoticeManagement = () => {
                             </div>
 
                             <div className="flex justify-end gap-3 pt-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowModal(false)}
-                                    className="px-6 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-300 transition-all text-left"
-                                >
-                                    Discard
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-2.5 rounded-2xl font-bold transition-all shadow-lg shadow-blue-900/20 flex items-center gap-2"
-                                >
+                                <button onClick={() => {
+                                    setShowModal(false);
+                                    setIsEditing(false);
+                                    setEditingId(null);
+                                    setFormData({ type: 'Announcement', title: '', content: '', expiryDate: '', eventDate: '', isActive: true });
+                                }} type="button" className="px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-800 rounded-xl transition-colors">Cancel</button>
+                                <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-2.5 rounded-xl font-bold shadow-lg shadow-blue-900/20 flex items-center gap-2">
                                     <CheckCircle2 className="w-4 h-4" />
-                                    Publish Notice
+                                    {isEditing ? 'Update Notice' : 'Publish Notice'}
                                 </button>
                             </div>
                         </form>
