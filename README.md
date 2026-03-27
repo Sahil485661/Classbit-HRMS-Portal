@@ -25,17 +25,17 @@ It is built with **Node.js** and **PostgreSQL**, featuring a modern and user-fri
 ## 🛠️ Tech Stack
 | Layer        | Technology |
 |--------------|------------|
-| Frontend     | HTML, CSS, JavaScript |
+| Frontend     | React, Tailwind.CSS, Material UI |
 | Backend      | Node.js |
-| Database     | PostgreSQL |
-| Tools        | GitHub, pgAdmin |
+| Database     | MySQL |
+| Tools        | Git, GitHub, Phpmyadmin|
 
 ---
 
 ## 🚀 Getting Started
 ### Prerequisites
 - Node.js (v16+)
-- PostgreSQL
+- MySQL
 - Git
 
 ### Installation
@@ -51,6 +51,8 @@ npm install
 
 # Start the server
 npm start
+# Start the Frontend
+npm run dev
 ```
 ## Project Folder Structure
 ```
