@@ -108,10 +108,8 @@ const MessagesPage = () => {
             const res = await axios.get(`http://localhost:5000/api/messages/${recipientId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            // Only update if messages length changed to avoid jitter
-            if (res.data.length !== messages.length) {
-                setMessages(res.data);
-            }
+            // Always update — the old length-equality guard caused messages to go stale/blank
+            setMessages(res.data);
             // Clear unread count locally when message thread is opened
             const target = chats.find(c => c.id === recipientId);
             if (target) {
@@ -126,16 +124,14 @@ const MessagesPage = () => {
         }
     };
 
-    // Auto-refresh messages every 3 seconds if chat is active
+    // Auto-refresh messages every 5 seconds when a direct chat is open
     useEffect(() => {
-        let interval;
-        if (activeChat && !activeChat.isDepartment) {
-            interval = setInterval(() => {
-                fetchMessages(activeChat.id);
-            }, 3000);
-        }
+        if (!activeChat || activeChat.isDepartment) return;
+        const interval = setInterval(() => {
+            fetchMessages(activeChat.id);
+        }, 5000);
         return () => clearInterval(interval);
-    }, [activeChat?.id, messages.length]);
+    }, [activeChat?.id]); // Stable dep — don't include messages.length (causes interval thrash)
 
     const handleSend = async (e) => {
         e.preventDefault();
@@ -282,8 +278,8 @@ const MessagesPage = () => {
                             </div>
                             <div>
                                 <h3 className="font-bold text-[var(--text-primary)]">{activeChat.isDepartment ? `${activeChat.name} Department` : `${activeChat.firstName} ${activeChat.lastName}`}</h3>
-                                <p className={`text-[10px] ${activeChat.isDepartment ? 'text-indigo-500' : 'text-green-500'} font-bold uppercase tracking-widest text-left`}>
-                                    {activeChat.isDepartment ? 'Broadcast Channel' : 'Active Now'}
+                                <p className={`text-[10px] ${activeChat.isDepartment ? 'text-indigo-500' : (activeChat.User?.lastLogin ? 'text-green-500' : 'text-[var(--text-secondary)]')} font-bold uppercase tracking-widest text-left`}>
+                                    {activeChat.isDepartment ? 'Broadcast Channel' : (activeChat.User?.lastLogin ? `Last Active: ${new Date(activeChat.User.lastLogin).toLocaleDateString()} ${new Date(activeChat.User.lastLogin).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Offline')}
                                 </p>
                             </div>
                         </div>
@@ -313,32 +309,70 @@ const MessagesPage = () => {
                                 )}
                             </div>
                         ) : (
-                            messages.map((msg) => (
-                                <div key={msg.id} className={`flex ${msg.senderId === user.id ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`max-w-[70%] p-4 rounded-3xl text-sm shadow-sm ${msg.senderId === user.id
-                                        ? 'bg-blue-600 text-white rounded-br-none'
-                                        : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] rounded-bl-none'
-                                        }`}>
-                                        {msg.content && <p className="leading-relaxed text-left">{msg.content}</p>}
-                                        {msg.attachment && (
-                                            <div className={`mt-2 ${msg.content ? 'pt-2 border-t border-white/10' : ''}`}>
-                                                <a
-                                                    href={`http://localhost:5000/${msg.attachment}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center gap-2 text-[10px] font-bold underline hover:no-underline opacity-90"
-                                                >
-                                                    <Paperclip className="w-3 h-3" />
-                                                    {msg.attachment.split(/[\\/]/).pop().split('-').slice(1).join('-') || 'Attachment'}
-                                                </a>
-                                            </div>
-                                        )}
-                                        <p className={`text-[9px] mt-2 font-bold opacity-60 ${msg.senderId === user.id ? 'text-right' : 'text-left'}`}>
-                                            {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </p>
+                            messages.map((msg, index) => {
+                                const msgDate = new Date(msg.createdAt).toLocaleDateString();
+                                const prevMsgDate = index > 0 ? new Date(messages[index - 1].createdAt).toLocaleDateString() : null;
+                                const showDateDivider = msgDate !== prevMsgDate;
+                                
+                                let displayDate = msgDate;
+                                if (msgDate === new Date().toLocaleDateString()) {
+                                    displayDate = 'Today';
+                                } else if (msgDate === new Date(Date.now() - 86400000).toLocaleDateString()) {
+                                    displayDate = 'Yesterday';
+                                }
+
+                                return (
+                                <React.Fragment key={msg.id}>
+                                    {showDateDivider && (
+                                        <div className="flex justify-center my-4">
+                                            <span className="bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-secondary)] text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest shadow-sm">
+                                                {displayDate}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className={`flex ${msg.senderId === user.id ? 'justify-end' : 'justify-start'}`}>
+                                        <div className={`max-w-[70%] p-4 rounded-3xl text-sm shadow-sm ${msg.senderId === user.id
+                                            ? 'bg-blue-600 text-white rounded-br-none'
+                                            : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] rounded-bl-none'
+                                            }`}>
+                                            {msg.content && <p className="leading-relaxed text-left">{msg.content}</p>}
+                                            {msg.attachment && (() => {
+                                                // Normalize path and build a clean URL
+                                                const cleanPath = msg.attachment.replace(/\\/g, '/');
+                                                const fileName = cleanPath.split('/').pop().replace(/^\d+-/, '') || 'Attachment';
+                                                const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName);
+                                                return (
+                                                    <div className={`mt-2 ${msg.content ? 'pt-2 border-t border-white/10' : ''}`}>
+                                                        {isImage ? (
+                                                            <a href={`http://localhost:5000/${cleanPath}`} target="_blank" rel="noopener noreferrer">
+                                                                <img
+                                                                    src={`http://localhost:5000/${cleanPath}`}
+                                                                    alt={fileName}
+                                                                    className="max-w-[220px] rounded-xl mt-1 border border-white/10 hover:opacity-90 transition-opacity"
+                                                                />
+                                                            </a>
+                                                        ) : (
+                                                            <a
+                                                                href={`http://localhost:5000/${cleanPath}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="flex items-center gap-2 text-[10px] font-bold underline hover:no-underline opacity-90"
+                                                            >
+                                                                <Paperclip className="w-3 h-3" />
+                                                                {fileName}
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })()}
+                                            <p className={`text-[9px] mt-2 font-bold opacity-60 ${msg.senderId === user.id ? 'text-right' : 'text-left'}`}>
+                                                {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
-                            ))
+                                </React.Fragment>
+                                );
+                            })
                         )}
                         <div ref={chatEndRef} />
                     </div>

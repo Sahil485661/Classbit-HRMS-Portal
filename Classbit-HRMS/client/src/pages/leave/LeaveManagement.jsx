@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
-import { Calendar, Plus, Clock, CheckCircle, XCircle, FileText, AlertCircle } from 'lucide-react';
+import { Calendar, Plus, Clock, CheckCircle, XCircle, FileText, AlertCircle, Mail } from 'lucide-react';
 import Modal from '../../components/Modal';
 
 const LeaveManagement = () => {
@@ -38,8 +38,46 @@ const LeaveManagement = () => {
         fetchLeaves();
     }, [user.role]);
 
+    const getUsedDaysThisMonth = (typeId, month, year) => {
+        return leaves
+            .filter(l =>
+                l.status === 'Approved' &&
+                Number(l.leaveTypeId) === typeId &&
+                new Date(l.startDate).getMonth() === month &&
+                new Date(l.startDate).getFullYear() === year &&
+                (user.role === 'Employee' ? true : l.employeeId === user.employeeId)
+            )
+            .reduce((acc, curr) => acc + calculateDays(curr.startDate, curr.endDate), 0);
+    };
+
     const handleApply = async (e) => {
         e.preventDefault();
+
+        if (formData.endDate < formData.startDate) {
+            return alert("Ending date cannot be before the starting date.");
+        }
+
+        const appliedDays = calculateDays(formData.startDate, formData.endDate);
+        const typeId = Number(formData.leaveTypeId);
+
+        if (typeId === 1) {
+            if (getUsedDays(1) + appliedDays > 12) {
+                return alert(`Annual Leave limit exceeded. You only have ${Math.max(0, 12 - getUsedDays(1))} days left this year.`);
+            }
+        } else if (typeId === 2) {
+            if (getUsedDays(2) + appliedDays > 10) {
+                return alert(`Sick Leave limit exceeded. You only have ${Math.max(0, 10 - getUsedDays(2))} days left this year.`);
+            }
+        } else if (typeId === 3) {
+            const startMonth = new Date(formData.startDate).getMonth();
+            const startYear = new Date(formData.startDate).getFullYear();
+            const usedThisMonth = getUsedDaysThisMonth(3, startMonth, startYear);
+            
+            if (usedThisMonth + appliedDays > 2) {
+                return alert(`Casual Leave is limited to 2 days per month. You have already used ${usedThisMonth} day(s) in this month.`);
+            }
+        }
+
         try {
             const token = localStorage.getItem('token');
             await axios.post('http://localhost:5000/api/leave/apply', formData, {
@@ -65,6 +103,18 @@ const LeaveManagement = () => {
         }
     };
 
+    const handleNotifyEmployee = async (id) => {
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post(`http://localhost:5000/api/email-actions/leave/${id}/notify`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            alert('Employee notified successfully!');
+        } catch (error) {
+            alert('Failed to send notification: ' + (error.response?.data?.message || error.message));
+        }
+    };
+
     const calculateDays = (start, end) => {
         const d1 = new Date(start);
         const d2 = new Date(end);
@@ -85,9 +135,9 @@ const LeaveManagement = () => {
     };
 
     const leaveBalance = [
-        { type: 'Annual Leave', total: 20, used: getUsedDays(1), remaining: Math.max(0, 20 - getUsedDays(1)), color: 'bg-blue-500' },
+        { type: 'Annual Leave', total: 12, used: getUsedDays(1), remaining: Math.max(0, 12 - getUsedDays(1)), color: 'bg-blue-500' },
         { type: 'Sick Leave', total: 10, used: getUsedDays(2), remaining: Math.max(0, 10 - getUsedDays(2)), color: 'bg-red-500' },
-        { type: 'Casual Leave', total: 5, used: getUsedDays(3), remaining: Math.max(0, 5 - getUsedDays(3)), color: 'bg-emerald-500' },
+        { type: 'Casual Leave (Month)', total: 2, used: getUsedDaysThisMonth(3, new Date().getMonth(), new Date().getFullYear()), remaining: Math.max(0, 2 - getUsedDaysThisMonth(3, new Date().getMonth(), new Date().getFullYear())), color: 'bg-emerald-500' },
     ];
 
     return (
@@ -211,7 +261,18 @@ const LeaveManagement = () => {
                                                             </button>
                                                         </>
                                                     ) : (
-                                                        <span className="text-[10px] text-[var(--text-secondary)] italic uppercase">No Actions</span>
+                                                        <>
+                                                        {(user.role === 'Super Admin' || user.role === 'Manager' || user.role === 'HR') && (
+                                                            <button
+                                                                onClick={() => handleNotifyEmployee(leave.id)}
+                                                                className="p-1.5 bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white rounded-lg transition-all"
+                                                                title="Send Status Email"
+                                                            >
+                                                                <Mail className="w-4 h-4" />
+                                                            </button>
+                                                        )}
+                                                        <span className="text-[10px] text-[var(--text-secondary)] italic uppercase ml-1 block my-auto">Processed</span>
+                                                        </>
                                                     )}
                                                 </div>
                                             </td>
@@ -242,6 +303,7 @@ const LeaveManagement = () => {
                             <input
                                 type="date"
                                 required
+                                min={formData.startDate} // Ensure ending date is after or same as starting date natively in HTML
                                 className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-[var(--text-primary)] focus:outline-none"
                                 value={formData.endDate}
                                 onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}

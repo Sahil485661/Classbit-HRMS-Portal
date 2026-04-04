@@ -14,18 +14,17 @@ const Grievance = require('./Grievance');
 const Transaction = require('./Transaction');
 const Message = require('./Message');
 const Notice = require('./Notice');
-const Performance = require('./Performance');
-const Job = require('./Job');
-const Candidate = require('./Candidate');
 const ActivityLog = require('./ActivityLog');
 const Setting = require('./Setting');
 const Notification = require('./Notification');
+const EmailTemplate = require('./EmailTemplate');
+const EmailLog = require('./EmailLog');
 const AttendanceActivity = require('./AttendanceActivity');
 const TaskAttachment = require('./TaskAttachment');
 const TaskActivity = require('./TaskActivity');
 const TaskComment = require('./TaskComment');
-const Objective = require('./Objective');
-const Feedback = require('./Feedback');
+const ReimbursementCategory = require('./ReimbursementCategory');
+const ReimbursementClaim = require('./ReimbursementClaim');
 
 // Associations
 
@@ -110,35 +109,20 @@ User.hasMany(Message, { foreignKey: 'recipientId', as: 'ReceivedMessages', onDel
 Message.belongsTo(User, { as: 'Sender', foreignKey: 'senderId' });
 Message.belongsTo(User, { as: 'Recipient', foreignKey: 'recipientId' });
 
-Employee.hasMany(Performance, { foreignKey: 'employeeId', onDelete: 'CASCADE' });
-Performance.belongsTo(Employee, { foreignKey: 'employeeId' });
-
-Job.hasMany(Candidate, { foreignKey: 'jobId' });
-Candidate.belongsTo(Job, { foreignKey: 'jobId' });
-
 // User - Notification (One-to-Many)
 User.hasMany(Notification, { foreignKey: 'userId', onDelete: 'CASCADE' });
 Notification.belongsTo(User, { foreignKey: 'userId' });
 
-// Employee - Objective (One-to-Many)
-Employee.hasMany(Objective, { foreignKey: 'employeeId', onDelete: 'CASCADE' });
-Objective.belongsTo(Employee, { foreignKey: 'employeeId' });
-
-// Employee - Feedback (Target)
-Employee.hasMany(Feedback, { foreignKey: 'targetEmployeeId', onDelete: 'CASCADE' });
-Feedback.belongsTo(Employee, { as: 'TargetEmployee', foreignKey: 'targetEmployeeId' });
-
-// User - Feedback (Author)
-User.hasMany(Feedback, { foreignKey: 'authorId', onDelete: 'CASCADE' });
-Feedback.belongsTo(User, { as: 'Author', foreignKey: 'authorId' });
-
-// User - Performance (Reviewer)
-User.hasMany(Performance, { foreignKey: 'reviewerId', onDelete: 'SET NULL' });
-Performance.belongsTo(User, { as: 'Reviewer', foreignKey: 'reviewerId' });
-
 // User - ActivityLog (One-to-Many)
 User.hasMany(ActivityLog, { foreignKey: 'userId', onDelete: 'CASCADE' });
 ActivityLog.belongsTo(User, { foreignKey: 'userId' });
+
+// Reimbursement Associations
+ReimbursementCategory.hasMany(ReimbursementClaim, { foreignKey: 'categoryId' });
+ReimbursementClaim.belongsTo(ReimbursementCategory, { foreignKey: 'categoryId' });
+
+Employee.hasMany(ReimbursementClaim, { foreignKey: 'employeeId', onDelete: 'CASCADE' });
+ReimbursementClaim.belongsTo(Employee, { foreignKey: 'employeeId' });
 
 module.exports = {
     sequelize,
@@ -158,15 +142,15 @@ module.exports = {
     Message,
     Notice,
     Performance,
-    Job,
-    Candidate,
     ActivityLog,
     Setting,
     Notification,
+    EmailTemplate,
+    EmailLog,
     AttendanceActivity,
     TaskAttachment,
     TaskActivity,
     TaskComment,
-    Objective,
-    Feedback
+    ReimbursementCategory,
+    ReimbursementClaim
 };

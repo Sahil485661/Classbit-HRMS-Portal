@@ -9,6 +9,8 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid,
     Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const AdminDashboard = () => {
     const [data, setData] = useState(null);
@@ -76,6 +78,97 @@ const AdminDashboard = () => {
 
     if (loading) return <div className="p-8 text-slate-400 italic">Synchronizing system data...</div>;
 
+    const handleGenerateReport = () => {
+        const doc = new jsPDF();
+
+        // 1. Header
+        doc.setFontSize(22);
+        doc.setTextColor(40);
+        doc.text("Executive System Report", 14, 22);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`Generated on: ${new Date().toLocaleString('en-IN')}`, 14, 30);
+        doc.text("Classbit HRMS - Corporate Analytical Data", 14, 35);
+        
+        let targetY = 45;
+
+        // Helper to strip multi-byte Unicode chars (₹ and hidden spaces) for jsPDF standard fonts
+        const sanitize = (text) => {
+            if (!text) return '';
+            return String(text)
+                .replace(/₹/g, 'Rs. ')
+                .replace(/[^\x20-\x7E]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        };
+
+        // 2. High-Level Metrics
+        if (data?.summary) {
+            doc.setFontSize(14);
+            doc.setTextColor(0);
+            doc.text("Master Aggregates", 14, targetY);
+            
+            const statsData = data.summary.map(s => [sanitize(s.name), sanitize(s.value)]);
+            
+            autoTable(doc, {
+                startY: targetY + 5,
+                head: [['Metric Classification', 'Active Value']],
+                body: statsData,
+                theme: 'striped',
+                headStyles: { fillColor: [59, 130, 246] }, // Tailwind blue-500
+                styles: { fontSize: 10 }
+            });
+            targetY = doc.lastAutoTable.finalY + 15;
+        }
+
+        // 3. Demographics
+        if (data?.genderDistribution) {
+            if (targetY > 250) { doc.addPage(); targetY = 20; }
+            doc.setFontSize(14);
+            doc.setTextColor(0);
+            doc.text("Enterprise Demographics", 14, targetY);
+            
+            const genderData = data.genderDistribution.map(g => [sanitize(g.name), sanitize(g.value)]);
+            
+            autoTable(doc, {
+                startY: targetY + 5,
+                head: [['Demographic Segment', 'Headcount']],
+                body: genderData,
+                theme: 'striped',
+                headStyles: { fillColor: [16, 185, 129] }, // Tailwind emerald-500
+                styles: { fontSize: 10 }
+            });
+            targetY = doc.lastAutoTable.finalY + 15;
+        }
+
+        // 4. Assignments
+        if (recentTasks && recentTasks.length > 0) {
+            if (targetY > 250) { doc.addPage(); targetY = 20; }
+            doc.setFontSize(14);
+            doc.setTextColor(0);
+            doc.text("Active Work Assignments", 14, targetY);
+            
+            const taskData = recentTasks.map(t => [
+                sanitize(t.title),
+                sanitize(t.priority),
+                sanitize(t.status),
+                sanitize(new Date(t.deadline).toLocaleDateString())
+            ]);
+            
+            autoTable(doc, {
+                startY: targetY + 5,
+                head: [['Task Title', 'Priority', 'Status', 'Deadline']],
+                body: taskData,
+                theme: 'striped',
+                headStyles: { fillColor: [249, 115, 22] }, // Tailwind orange-500
+                styles: { fontSize: 10 }
+            });
+        }
+
+        doc.save(`System_Executive_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
             <div className="flex justify-between items-center text-left">
@@ -83,8 +176,12 @@ const AdminDashboard = () => {
                     <h1 className="text-2xl font-bold text-[var(--text-primary)]">System Overview</h1>
                     <p className="text-[var(--text-secondary)] mt-1">Real-time HRMS analytics and reporting.</p>
                 </div>
-                <button className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-blue-900/20">
-                    Generate Report
+                <button 
+                    onClick={handleGenerateReport}
+                    className="flex justify-center flex-row items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-blue-900/20 active:scale-95"
+                >
+                    <FileText className="w-4 h-4" />
+                    Generate PDF Report
                 </button>
             </div>
 

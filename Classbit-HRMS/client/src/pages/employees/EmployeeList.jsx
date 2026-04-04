@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useSelector } from 'react-redux';
 import {
     Search, Filter, Plus, MoreVertical, X,
-    Mail, Phone, Calendar, BadgeCheck, Trash2
+    Mail, Phone, Calendar, BadgeCheck, Trash2, History
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -180,13 +180,22 @@ const EmployeeList = ({ title = "Employee Directory" }) => {
                         {title === "Management Hierarchy" ? "View and manage leadership and administrative staff." : "Manage and view all company employees."}
                     </p>
                 </div>
-                <button
-                    onClick={() => navigate('/employees/add')}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-blue-900/20"
-                >
-                    <Plus className="w-5 h-5" />
-                    Add Employee
-                </button>
+                <div className="flex flex-wrap gap-3">
+                    <button
+                        onClick={() => navigate('/employees/history')}
+                        className="flex items-center gap-2 bg-[var(--bg-secondary)] hover:bg-[var(--hover-bg)] text-[var(--text-primary)] border border-[var(--border-color)] px-5 py-2.5 rounded-xl font-semibold transition-all shadow-sm"
+                    >
+                        <History className="w-5 h-5" />
+                        History
+                    </button>
+                    <button
+                        onClick={() => navigate('/employees/add')}
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-blue-900/20"
+                    >
+                        <Plus className="w-5 h-5" />
+                        Add Employee
+                    </button>
+                </div>
             </div>
 
             <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl shadow-xl overflow-hidden transition-colors">
@@ -347,22 +356,24 @@ const EmployeeList = ({ title = "Employee Directory" }) => {
                                                 >
                                                     <MoreVertical className="w-4 h-4" />
                                                 </button>
-                                                {emp.status === 'Inactive' ? (
-                                                    <button
-                                                        onClick={() => handleReactivate(emp.id)}
-                                                        className="p-2 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all"
-                                                        title="Reactivate Employee"
-                                                    >
-                                                        <BadgeCheck className="w-4 h-4" />
-                                                    </button>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => handleDelete(emp.id)}
-                                                        className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
-                                                        title="Deactivate Employee"
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
+                                                {user?.role === 'Super Admin' && (
+                                                    emp.status === 'Inactive' ? (
+                                                        <button
+                                                            onClick={() => handleReactivate(emp.id)}
+                                                            className="p-2 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-all"
+                                                            title="Reactivate Employee"
+                                                        >
+                                                            <BadgeCheck className="w-4 h-4" />
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => handleDelete(emp.id)}
+                                                            className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                                                            title="Deactivate Employee"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
+                                                    )
                                                 )}
                                                 {user?.role === 'Super Admin' && (
                                                     <button

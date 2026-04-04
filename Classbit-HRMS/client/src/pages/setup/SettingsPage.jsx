@@ -8,22 +8,25 @@ import RoleManagement from './RoleManagement';
 import CompanySettings from './CompanySettings';
 import DepartmentManagement from './DepartmentManagement';
 import NoticeManagement from './NoticeManagement';
+import StatutorySettings from './StatutorySettings';
+import EmailSettingsView from './EmailSettingsView';
 import { useSelector } from 'react-redux';
 
 const SettingsPage = () => {
     const [currentView, setCurrentView] = useState('grid'); // 'grid', 'roles', 'company', etc.
     const { user } = useSelector((state) => state.auth);
     const isSuperAdmin = user?.role === 'Super Admin';
+    const hasComplianceAccess = isSuperAdmin || user?.rolePermissions?.includes('Compliance');
 
     const sections = [
+        ...(hasComplianceAccess ? [
+            { id: 'compliance', name: 'Statutory Rules', icon: Database, desc: 'Manage dynamic PF, ESI, TDS brackets, and Professional Tax formulas.' },
+        ] : []),
         ...(isSuperAdmin ? [
             { id: 'company', name: 'Company Details', icon: Building, desc: 'Manage company address, tax info, and logos.' },
             { id: 'depts', name: 'Departments', icon: Briefcase, desc: 'Configure organizational units and branches.' },
             { id: 'roles', name: 'Role Permissions', icon: Shield, desc: 'Configure what each system role can see and do.' },
-            { id: 'email', name: 'Email Settings', icon: Mail, desc: 'SMTP configuration and email templates.' },
-            { id: 'payroll', name: 'Payment Methods', icon: CreditCard, desc: 'Configure payroll disbursement accounts.' },
-            { id: 'logs', name: 'System Logs', icon: Database, desc: 'View audit trails and error logs.' },
-            { id: 'locales', name: 'Localization', icon: Globe, desc: 'Set default language, currency, and timezone.' },
+            { id: 'email', name: 'Email Settings', icon: Mail, desc: 'SMTP configuration and email templates.' }
         ] : []),
         { id: 'notices', name: 'Internal Notices', icon: Bell, desc: 'Manage system announcements and daily quotes.' },
     ];
@@ -44,15 +47,8 @@ const SettingsPage = () => {
                     {currentView === 'company' && <CompanySettings />}
                     {currentView === 'depts' && <DepartmentManagement />}
                     {currentView === 'notices' && <NoticeManagement />}
-                    {['email', 'payroll', 'logs', 'locales'].includes(currentView) && (
-                        <div className="py-20 text-center">
-                            <div className="w-20 h-20 bg-[var(--bg-secondary)] rounded-3xl mx-auto flex items-center justify-center mb-6 text-[var(--text-secondary)] border border-[var(--border-color)]">
-                                <Database className="w-10 h-10" />
-                            </div>
-                            <h2 className="text-xl font-bold text-[var(--text-primary)] italic">Module Under Development</h2>
-                            <p className="text-[var(--text-secondary)] mt-2">The architecture for this module is ready. Integration coming in next push.</p>
-                        </div>
-                    )}
+                    {currentView === 'compliance' && <StatutorySettings />}
+                    {currentView === 'email' && <EmailSettingsView />}
                 </div>
             </div>
         );

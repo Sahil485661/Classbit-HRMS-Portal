@@ -35,4 +35,24 @@ const authorize = (...roles) => {
     };
 };
 
-module.exports = { protect, authorize };
+const roleCheck = (requiredPermission) => {
+    return async (req, res, next) => {
+        if (req.user.role === 'Super Admin') return next();
+        
+        try {
+            const { Role } = require('../models');
+            const userWithRole = await User.findByPk(req.user.id, {
+                include: [{ model: Role }]
+            });
+            const perms = userWithRole?.Role?.permissions || [];
+            if (perms.includes(requiredPermission)) return next();
+            
+            return res.status(403).json({ message: `Access denied. Missing ${requiredPermission} permission.` });
+        } catch (err) {
+            return res.status(500).json({ message: 'Role verification failed' });
+        }
+    };
+};
+
+
+module.exports = { protect, authorize, roleCheck };

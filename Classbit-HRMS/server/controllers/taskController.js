@@ -1,6 +1,7 @@
 const { sequelize } = require('../config/db');
 const { Task, TaskAssignment, Employee, User, Department, Role, Notification, TaskAttachment, TaskActivity, TaskComment } = require('../models');
 const { Op } = require('sequelize');
+const { createLog } = require('./activityController');
 
 const createTask = async (req, res) => {
     const t = await sequelize.transaction();
@@ -79,6 +80,7 @@ const createTask = async (req, res) => {
         }, { transaction: t });
 
         await t.commit();
+        await createLog(req.user.id, 'CREATE_TASK', 'Tasks', `Assigned new task "${title}" to ${finalAssigneeIds.length} employee(s).`);
         res.status(201).json(task);
     } catch (error) {
         await t.rollback();
@@ -175,6 +177,10 @@ const updateTaskStatus = async (req, res) => {
             action: 'Status Changed',
             details: `Status updated from ${oldStatus} to ${status}.`
         });
+
+        if (status === 'Completed') {
+            await createLog(req.user.id, 'COMPLETE_TASK', 'Tasks', `Marked task "${task.title}" as Completed.`);
+        }
 
         res.json(task);
     } catch (error) {
@@ -301,6 +307,8 @@ const uploadTaskAttachment = async (req, res) => {
             action: 'Attachment Uploaded',
             details: `File attached: ${req.file.originalname}`
         });
+
+        await createLog(req.user.id, 'UPLOAD_ATTACHMENT', 'Tasks', `Attached file "${req.file.originalname}" to task "${task.title}".`);
 
         res.status(201).json(attachmentWithMemeber);
     } catch (error) {

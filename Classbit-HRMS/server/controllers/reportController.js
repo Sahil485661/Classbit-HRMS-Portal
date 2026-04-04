@@ -1,4 +1,4 @@
-const { Employee, Department, Attendance, PayrollRecord, Performance, User } = require('../models');
+const { Employee, Department, Attendance, PayrollRecord, User } = require('../models');
 
 const getReportData = async (req, res) => {
     try {
@@ -7,11 +7,11 @@ const getReportData = async (req, res) => {
 
         if (type === 'attendance') {
             const records = await Attendance.findAll({
-                include: [{ model: Employee, attributes: ['firstName', 'lastName', 'employeeId'] }]
+                include: [{ model: Employee, attributes: ['firstName', 'lastName', 'employeeId'], paranoid: false }]
             });
             data = records.map(r => ({
-                Employee_ID: r.Employee.employeeId,
-                Name: `${r.Employee.firstName} ${r.Employee.lastName}`,
+                Employee_ID: r.Employee?.employeeId || 'Unknown',
+                Name: r.Employee ? `${r.Employee.firstName} ${r.Employee.lastName}` : 'Deleted/Unknown',
                 Date: r.date,
                 Status: r.status,
                 Check_In: r.checkIn ? new Date(r.checkIn).toLocaleString() : 'N/A',
@@ -22,11 +22,11 @@ const getReportData = async (req, res) => {
         } 
         else if (type === 'payroll') {
             const records = await PayrollRecord.findAll({
-                include: [{ model: Employee, attributes: ['firstName', 'lastName', 'employeeId'] }]
+                include: [{ model: Employee, attributes: ['firstName', 'lastName', 'employeeId'], paranoid: false }]
             });
             data = records.map(r => ({
-                Employee_ID: r.Employee.employeeId,
-                Name: `${r.Employee.firstName} ${r.Employee.lastName}`,
+                Employee_ID: r.Employee?.employeeId || 'Unknown',
+                Name: r.Employee ? `${r.Employee.firstName} ${r.Employee.lastName}` : 'Deleted/Unknown',
                 Month: r.month,
                 Year: r.year,
                 Gross_Salary: r.grossSalary,
@@ -35,24 +35,9 @@ const getReportData = async (req, res) => {
                 Status: r.status
             }));
         }
-        else if (type === 'performance') {
-            const records = await Performance.findAll({
-                include: [
-                    { model: Employee, attributes: ['firstName', 'lastName', 'employeeId'] }
-                ]
-            });
-            data = records.map(r => ({
-                Employee_ID: r.Employee.employeeId,
-                Name: `${r.Employee.firstName} ${r.Employee.lastName}`,
-                Month: r.month,
-                Year: r.year,
-                Overall_Score: r.overallScore,
-                Potential: r.potentialScore,
-                Performance: r.performanceScore,
-            }));
-        }
         else if (type === 'employees') {
             const records = await Employee.findAll({
+                paranoid: false,
                 include: [{ model: Department, attributes: ['name'] }]
             });
             data = records.map(r => ({
@@ -60,7 +45,7 @@ const getReportData = async (req, res) => {
                 Name: `${r.firstName} ${r.lastName}`,
                 Department: r.Department ? r.Department.name : 'N/A',
                 Designation: r.designation,
-                Status: r.status,
+                Status: r.deletedAt ? 'Deleted' : r.status,
                 Joining_Date: r.joiningDate,
                 Gender: r.gender,
                 Contact: r.phone || 'N/A'

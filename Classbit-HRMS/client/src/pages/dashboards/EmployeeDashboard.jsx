@@ -23,11 +23,15 @@ const EmployeeDashboard = () => {
     const { user } = useSelector((state) => state.auth);
     const navigate = useNavigate();
     const [isClockedIn, setIsClockedIn] = useState(false);
+    const [shiftCompleted, setShiftCompleted] = useState(false);
     const [clockInTime, setClockInTime] = useState(null);
     const [myWork, setMyWork] = useState([]);
     const [quote, setQuote] = useState(null);
     const [loading, setLoading] = useState(true);
     const [permittedDesignations, setPermittedDesignations] = useState([]);
+
+    const nowTime = new Date();
+    const isAfterOfficeHours = nowTime.getHours() >= 18;
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -67,12 +71,20 @@ const EmployeeDashboard = () => {
                     const attData = Array.isArray(attRes.data) ? attRes.data : [];
                     const today = new Date().toLocaleDateString('en-CA');
                     const todayAtt = attData.find(a => a.date === today);
-                    if (todayAtt && !todayAtt.checkOut) {
-                        setIsClockedIn(true);
+                    if (todayAtt) {
                         const checkInDate = new Date(todayAtt.checkIn);
                         setClockInTime(checkInDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+                        
+                        if (!todayAtt.checkOut) {
+                            setIsClockedIn(true);
+                            setShiftCompleted(false);
+                        } else {
+                            setIsClockedIn(false);
+                            setShiftCompleted(true);
+                        }
                     } else {
                         setIsClockedIn(false);
+                        setShiftCompleted(false);
                         setClockInTime(null);
                     }
                 } catch (e) { console.error('Attendance fetch failed', e); }
@@ -91,15 +103,16 @@ const EmployeeDashboard = () => {
             const token = localStorage.getItem('token');
             const headers = { Authorization: `Bearer ${token}` };
 
-            if (!isClockedIn) {
+            if (!isClockedIn && !shiftCompleted) {
                 const res = await axios.post('http://localhost:5000/api/attendance/clock-in', {}, { headers });
                 const checkInDate = new Date(res.data.checkIn);
                 setClockInTime(checkInDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
                 setIsClockedIn(true);
-            } else {
+                setShiftCompleted(false);
+            } else if (isClockedIn) {
                 await axios.post('http://localhost:5000/api/attendance/clock-out', {}, { headers });
                 setIsClockedIn(false);
-                setClockInTime(null);
+                setShiftCompleted(true);
             }
             // Trigger a re-fetch of all dashboard data to ensure consistency
             const workRes = await axios.get('http://localhost:5000/api/tasks/my', { headers });
@@ -130,22 +143,28 @@ const EmployeeDashboard = () => {
                     <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16 blur-2xl" />
                     <div className="text-right relative z-10">
                         <p className="text-[10px] text-[var(--text-secondary)] uppercase font-bold tracking-widest">Shift Status</p>
-                        <p className="text-sm font-bold text-[var(--text-primary)] mt-1">
-                            {isClockedIn ? `Working since ${clockInTime}` : 'Not Clocked In'}
+                        <p className="text-sm font-bold text-[var(--text-primary)] mt-1 mb-1">
+                            {shiftCompleted ? `Completed (${clockInTime})` : isClockedIn ? `Working since ${clockInTime}` : 'Not Clocked In'}
                         </p>
+                        <p className="text-xs text-[var(--text-secondary)]">Office Time: 09:00 AM - 06:00 PM</p>
                     </div>
                     <button
                         onClick={handleClockToggle}
+                        disabled={shiftCompleted || (!isClockedIn && isAfterOfficeHours)}
                         className={`
                             relative z-10 flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all transform active:scale-95 shadow-lg
-                            ${isClockedIn
+                            ${shiftCompleted 
+                                ? 'bg-slate-500 hover:bg-slate-500 text-white shadow-none cursor-not-allowed opacity-50'
+                                : (!isClockedIn && isAfterOfficeHours)
+                                ? 'bg-slate-700 hover:bg-slate-700 text-slate-400 shadow-none cursor-not-allowed'
+                                : isClockedIn
                                 ? 'bg-red-500 hover:bg-red-400 text-white shadow-red-900/20'
                                 : 'bg-green-600 hover:bg-green-500 text-white shadow-green-900/20'
                             }
                         `}
                     >
-                        {isClockedIn ? <Square className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
-                        {isClockedIn ? 'Clock Out' : 'Clock In'}
+                        {shiftCompleted ? <CheckCircle2 className="w-4 h-4 fill-current text-[var(--card-bg)]" /> : isClockedIn ? <Square className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
+                        {shiftCompleted ? 'Shift Over' : (!isClockedIn && isAfterOfficeHours) ? 'Disabled' : isClockedIn ? 'Clock Out' : 'Clock In'}
                     </button>
                 </div>
             </div>

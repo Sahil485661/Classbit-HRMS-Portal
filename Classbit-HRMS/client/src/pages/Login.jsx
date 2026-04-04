@@ -4,6 +4,7 @@ import { login } from '../slices/authSlice';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Lock, Mail, Loader2 } from 'lucide-react';
+import ThemeToggle from '../components/ThemeToggle';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -16,12 +17,17 @@ const Login = () => {
         e.preventDefault();
         const result = await dispatch(login({ email, password }));
         if (!result.error) {
-            navigate('/dashboard');
+            if (result.payload.requirePasswordChange) {
+                navigate('/force-change-password');
+            } else {
+                navigate('/dashboard');
+            }
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
+        <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)] px-4">
+            <ThemeToggle />
             {/* Background blobs */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
                 <div className="absolute top-1/4 -left-20 w-80 h-80 bg-blue-600/20 rounded-full blur-[120px]" />
@@ -31,26 +37,26 @@ const Login = () => {
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="w-full max-w-md"
+                className="w-full max-w-md relative z-10"
             >
-                <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 p-8 rounded-2xl shadow-2xl">
+                <div className="bg-[var(--card-bg)]/80 backdrop-blur-xl border border-[var(--border-color)] p-8 rounded-2xl shadow-2xl">
                     <div className="text-center mb-8">
                         <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
                             Classbit HRMS
                         </h1>
-                        <p className="text-slate-400 mt-2">Welcome back! Please login to your account.</p>
+                        <p className="text-[var(--text-secondary)] mt-2">Welcome back! Please login to your account.</p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">Email Address</label>
+                            <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">Email Address</label>
                             <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
                                 <input
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-3 pl-11 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-slate-100"
+                                    className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg py-3 pl-11 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-[var(--text-primary)]"
                                     placeholder="admin@classbit.com"
                                     required
                                 />
@@ -58,14 +64,14 @@ const Login = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
+                            <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">Password</label>
                             <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
                                 <input
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-3 pl-11 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-slate-100"
+                                    className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg py-3 pl-11 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-[var(--text-primary)]"
                                     placeholder="••••••••"
                                     required
                                 />
@@ -81,14 +87,14 @@ const Login = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 py-3 rounded-lg font-semibold text-white shadow-lg shadow-blue-900/20 transform transition-all active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-2"
+                            className="w-full bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl font-semibold text-white shadow-lg shadow-blue-900/20 transform transition-all active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-2"
                         >
                             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign In'}
                         </button>
                     </form>
 
-                    <div className="mt-8 text-center text-sm text-slate-500">
-                        Forgot password? <a href="#" className="text-blue-400 hover:underline">Contact HR</a>
+                    <div className="mt-8 text-center text-sm text-[var(--text-secondary)]">
+                        Forgot password? <button onClick={() => navigate('/forgot-password')} className="text-blue-500 hover:underline bg-transparent border-none">Reset it here</button>
                     </div>
                 </div>
             </motion.div>

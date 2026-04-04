@@ -6,6 +6,9 @@ const API_URL = 'http://localhost:5000/api/auth';
 export const login = createAsyncThunk('auth/login', async (credentials, { rejectWithValue }) => {
     try {
         const response = await axios.post(`${API_URL}/login`, credentials);
+        if (response.data.requirePasswordChange) {
+            return response.data; // { requirePasswordChange: true, email: '...' }
+        }
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
         return response.data;
@@ -18,7 +21,9 @@ const initialState = {
     user: JSON.parse(localStorage.getItem('user')) || null,
     token: localStorage.getItem('token') || null,
     loading: false,
-    error: null
+    error: null,
+    requirePasswordChange: false,
+    tempEmail: null
 };
 
 const authSlice = createSlice({
@@ -40,8 +45,15 @@ const authSlice = createSlice({
             })
             .addCase(login.fulfilled, (state, action) => {
                 state.loading = false;
-                state.user = action.payload.user;
-                state.token = action.payload.token;
+                if (action.payload.requirePasswordChange) {
+                    state.requirePasswordChange = true;
+                    state.tempEmail = action.payload.email;
+                } else {
+                    state.user = action.payload.user;
+                    state.token = action.payload.token;
+                    state.requirePasswordChange = false;
+                    state.tempEmail = null;
+                }
             })
             .addCase(login.rejected, (state, action) => {
                 state.loading = false;

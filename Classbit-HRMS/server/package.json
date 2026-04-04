@@ -20,6 +20,7 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
     "mysql2": "^3.20.0",
+    "nodemailer": "^8.0.4",
     "nodemon": "^3.1.11",
     "pdfkit": "^0.17.2",
     "pg": "^8.18.0",

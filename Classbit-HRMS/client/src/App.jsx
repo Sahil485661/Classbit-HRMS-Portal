@@ -6,8 +6,12 @@ import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import ThemeToggle from './components/ThemeToggle';
 import Login from './pages/Login';
+import ForceChangePassword from './pages/ForceChangePassword';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import EmployeeList from './pages/employees/EmployeeList';
+import EmployeeHistory from './pages/employees/EmployeeHistory';
 import AddEmployeePage from './pages/employees/AddEmployeePage';
 import EmployeeDetailsPage from './pages/employees/EmployeeDetailsPage';
 import AttendancePage from './pages/attendance/AttendancePage';
@@ -15,15 +19,14 @@ import TaskBoard from './pages/work/TaskBoard';
 import TaskDetailsPage from './pages/work/TaskDetailsPage';
 import PayrollPage from './pages/payroll/PayrollPage';
 import LeaveManagement from './pages/leave/LeaveManagement';
-import PerformancePage from './pages/performance/PerformancePage';
 import SettingsPage from './pages/setup/SettingsPage';
 import LoanPage from './pages/loan/LoanPage';
 import GrievancePage from './pages/grievance/GrievancePage';
 import MessagesPage from './pages/messages/MessagesPage';
-import RecruitmentPage from './pages/recruitment/RecruitmentPage';
 import AccountingPage from './pages/accounting/AccountingPage';
 import ReportsPage from './pages/reports/ReportsPage';
 import ActivitiesPage from './pages/activities/ActivitiesPage';
+import ReimbursementPage from './pages/reimbursements/ReimbursementPage';
 
 
 class ErrorBoundary extends React.Component {
@@ -56,11 +59,26 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-const PrivateRoute = ({ children, roles }) => {
+const PrivateRoute = ({ children, roles, permissionKey }) => {
   const { user, token } = useSelector((state) => state.auth);
 
   if (!token) return <Navigate to="/login" />;
-  if (roles && !roles.includes(user.role)) return <Navigate to="/dashboard" />;
+  
+  if (user.role === 'Super Admin') return <ErrorBoundary>{children}</ErrorBoundary>;
+
+  const perms = user.permissions;
+
+  // Fallback to legacy role checks if permissions are unassigned or undefined
+  if (perms === undefined || perms.length === 0) {
+      if (roles && !roles.includes(user.role)) return <Navigate to="/dashboard" />;
+      return <ErrorBoundary>{children}</ErrorBoundary>;
+  }
+
+  if (permissionKey) {
+      if (!perms.includes(permissionKey)) return <Navigate to="/dashboard" />;
+  } else if (roles && !roles.includes(user.role)) {
+      return <Navigate to="/dashboard" />;
+  }
 
   return <ErrorBoundary>{children}</ErrorBoundary>;
 };
@@ -89,6 +107,9 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/force-change-password" element={<ForceChangePassword />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/verify-otp" element={<ResetPassword />} />
 
           <Route path="/" element={<Navigate to="/dashboard" />} />
 
@@ -99,97 +120,97 @@ function App() {
           } />
 
           <Route path="/employees" element={
-            <PrivateRoute roles={['Super Admin', 'HR', 'Manager']}>
+            <PrivateRoute permissionKey="Employees">
               <AppLayout><EmployeeList /></AppLayout>
             </PrivateRoute>
           } />
 
+          <Route path="/employees/history" element={
+            <PrivateRoute permissionKey="Employees">
+              <AppLayout><EmployeeHistory /></AppLayout>
+            </PrivateRoute>
+          } />
+
           <Route path="/employees/:id" element={
-            <PrivateRoute roles={['Super Admin', 'HR', 'Manager']}>
+            <PrivateRoute permissionKey="Employees">
               <AppLayout><EmployeeDetailsPage /></AppLayout>
             </PrivateRoute>
           } />
 
           <Route path="/employees/add" element={
-            <PrivateRoute roles={['Super Admin', 'HR', 'Manager']}>
+            <PrivateRoute permissionKey="Employees">
               <AppLayout><AddEmployeePage /></AppLayout>
             </PrivateRoute>
           } />
 
           <Route path="/employees/edit/:id" element={
-            <PrivateRoute roles={['Super Admin', 'HR', 'Manager']}>
+            <PrivateRoute permissionKey="Employees">
               <AppLayout><AddEmployeePage /></AppLayout>
             </PrivateRoute>
           } />
 
           <Route path="/attendance" element={
-            <PrivateRoute>
+            <PrivateRoute permissionKey="Attendance">
               <AppLayout><AttendancePage /></AppLayout>
             </PrivateRoute>
           } />
 
           <Route path="/work" element={
-            <PrivateRoute>
+            <PrivateRoute permissionKey="Tasks">
               <AppLayout><TaskBoard /></AppLayout>
             </PrivateRoute>
           } />
 
           <Route path="/work/tasks/:id" element={
-            <PrivateRoute>
+            <PrivateRoute permissionKey="Tasks">
               <AppLayout><TaskDetailsPage /></AppLayout>
             </PrivateRoute>
           } />
 
           <Route path="/payroll" element={
-            <PrivateRoute roles={['Super Admin', 'HR', 'Employee']}>
+            <PrivateRoute permissionKey="Payroll">
               <AppLayout><PayrollPage /></AppLayout>
             </PrivateRoute>
           } />
 
           <Route path="/leave" element={
-            <PrivateRoute>
+            <PrivateRoute permissionKey="Leaves">
               <AppLayout><LeaveManagement /></AppLayout>
             </PrivateRoute>
           } />
 
-          <Route path="/performance" element={
-            <PrivateRoute>
-              <AppLayout><PerformancePage /></AppLayout>
-            </PrivateRoute>
-          } />
-
           <Route path="/setup" element={
-            <PrivateRoute roles={['Super Admin', 'HR']}>
+            <PrivateRoute permissionKey="Settings">
               <AppLayout><SettingsPage /></AppLayout>
             </PrivateRoute>
           } />
 
           <Route path="/loan" element={
-            <PrivateRoute>
+            <PrivateRoute permissionKey="Loans">
               <AppLayout><LoanPage /></AppLayout>
             </PrivateRoute>
           } />
 
           <Route path="/grievance" element={
-            <PrivateRoute>
+            <PrivateRoute permissionKey="Grievances">
               <AppLayout><GrievancePage /></AppLayout>
             </PrivateRoute>
           } />
 
           <Route path="/messages" element={
-            <PrivateRoute>
+            <PrivateRoute permissionKey="Messages">
               <AppLayout><MessagesPage /></AppLayout>
             </PrivateRoute>
           } />
 
-          <Route path="/recruitment" element={
-            <PrivateRoute roles={['Super Admin', 'HR']}>
-              <AppLayout><RecruitmentPage /></AppLayout>
+          <Route path="/reimbursements" element={
+            <PrivateRoute permissionKey="Reimbursements">
+              <AppLayout><ReimbursementPage /></AppLayout>
             </PrivateRoute>
           } />
 
           <Route path="/accounting" element={
-            <PrivateRoute roles={['Super Admin']}>
+            <PrivateRoute permissionKey="Accounting">
               <AppLayout><AccountingPage /></AppLayout>
             </PrivateRoute>
           } />

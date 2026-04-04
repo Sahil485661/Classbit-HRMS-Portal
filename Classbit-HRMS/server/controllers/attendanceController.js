@@ -8,6 +8,15 @@ const clockIn = async (req, res) => {
 
         const today = new Date().toLocaleDateString('en-CA');
 
+        const now = new Date();
+        const hour = now.getHours();
+        const minute = now.getMinutes();
+
+        // Check if office time is over (After 6:00 PM)
+        if (hour >= 18) {
+            return res.status(400).json({ message: 'Clock in is not allowed after 6:00 PM' });
+        }
+
         // Check if already clocked in today
         const existing = await Attendance.findOne({
             where: { employeeId, date: today }
@@ -16,10 +25,6 @@ const clockIn = async (req, res) => {
         if (existing) {
             return res.status(400).json({ message: 'Already clocked in today' });
         }
-
-        const now = new Date();
-        const hour = now.getHours();
-        const minute = now.getMinutes();
         
         // Status logic: Late if after 9:15 AM
         let status = 'Present';

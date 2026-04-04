@@ -32,8 +32,18 @@ const PayrollRecord = sequelize.define('PayrollRecord', {
         allowNull: false
     },
     status: {
-        type: DataTypes.ENUM('Generated', 'Locked', 'Paid'),
-        defaultValue: 'Generated'
+        type: DataTypes.ENUM('Draft', 'Verified', 'Approved', 'Paid'),
+        defaultValue: 'Draft'
+    },
+    approvedBy: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    breakdown: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        defaultValue: {}
+        // Snapshot: { baseSalary, allowances:{HRA,Travel,...}, deductions:{PF,ESI,Tax,...}, loanDeduction, lopDays, lopAmount, overtimePay }
     },
     payslipUrl: {
         type: DataTypes.STRING,

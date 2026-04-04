@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useSelector } from 'react-redux';
 import { History, Shield, LogIn, UserCircle, Settings, AlertTriangle, Search, Clock } from 'lucide-react';
 
 const ActivitiesPage = () => {
+    const { user } = useSelector((state) => state.auth);
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('All');
+    const [searchTerm, setSearchTerm] = useState('');
 
     const fetchLogs = async () => {
         try {
@@ -23,6 +27,20 @@ const ActivitiesPage = () => {
     useEffect(() => {
         fetchLogs();
     }, []);
+
+    const handlePurgeLogs = async () => {
+        if (!window.confirm('WARNING: You are about to permanently delete all activity logs from the database. This action cannot be undone. Proceed?')) return;
+        
+        try {
+            const token = localStorage.getItem('token');
+            await axios.delete('http://localhost:5000/api/activities/purge', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            fetchLogs();
+        } catch (error) {
+            alert('Failed to purge logs: ' + (error.response?.data?.message || error.message));
+        }
+    };
 
     const getActionColor = (action) => {
         if (action.includes('CREATE') || action.includes('ADD')) return 'text-emerald-400';
@@ -50,10 +68,29 @@ const ActivitiesPage = () => {
                     <Search className="w-4 h-4 text-slate-500 absolute left-4 top-1/2 -translate-y-1/2 group-focus-within:text-blue-400 transition-colors" />
                     <input
                         type="text"
-                        placeholder="Search audit IDs..."
+                        placeholder="Search audit IDs or users..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
                         className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl pl-12 pr-6 py-3 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-xl transition-all w-80"
                     />
                 </div>
+            </div>
+
+            {/* Role Filtering Tabs */}
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                {['All', 'Super Admin & HR', 'Managers', 'Employees'].map((tab) => (
+                    <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
+                            activeTab === tab 
+                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' 
+                            : 'bg-[var(--card-bg)] text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--hover-bg)]'
+                        }`}
+                    >
+                        {tab} {tab !== 'All' ? 'Logs' : 'Activities'}
+                    </button>
+                ))}
             </div>
 
             <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-3xl shadow-2xl overflow-hidden transition-colors">
@@ -62,7 +99,18 @@ const ActivitiesPage = () => {
                         <Shield className="w-5 h-5 text-emerald-500" />
                         <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-widest">Live Security Feed</h3>
                     </div>
-                    <button onClick={fetchLogs} className="text-xs font-bold text-blue-400 hover:underline">Force Refresh</button>
+                    <div className="flex items-center gap-4">
+                        <button onClick={fetchLogs} className="text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors">Force Refresh</button>
+                        {user?.role === 'Super Admin' && (
+                            <button 
+                                onClick={handlePurgeLogs} 
+                                className="text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 px-4 py-2 rounded-xl shadow-lg shadow-rose-500/20 transition-all flex items-center gap-2"
+                            >
+                                <AlertTriangle className="w-3 h-3" />
+                                Clear All Logs
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 <div className="divide-y divide-[var(--border-color)]">
@@ -71,7 +119,21 @@ const ActivitiesPage = () => {
                     ) : logs.length === 0 ? (
                         <div className="p-12 text-center text-[var(--text-secondary)] italic">No recent activity detected.</div>
                     ) : (
-                        logs.map((log) => {
+                        logs.filter(log => {
+                            // Search filter
+                            if (searchTerm && !log.id.toLowerCase().includes(searchTerm.toLowerCase()) && !(log.User?.email || '').toLowerCase().includes(searchTerm.toLowerCase())) {
+                                return false;
+                            }
+                            
+                            if (activeTab === 'All') return true;
+                            
+                            const roleName = log.User?.Role?.name;
+                            if (activeTab === 'Super Admin & HR') return roleName === 'Super Admin' || roleName === 'HR';
+                            if (activeTab === 'Managers') return roleName === 'Manager';
+                            if (activeTab === 'Employees') return Math.abs(roleName === 'Employee') || !roleName; // Fallback for null
+                            
+                            return true;
+                        }).map((log) => {
                             const Icon = getIcon(log.action);
                             return (
                                 <div key={log.id} className="p-6 hover:bg-[var(--bg-secondary)]/30 transition-all flex items-start gap-6">
@@ -86,15 +148,15 @@ const ActivitiesPage = () => {
                                                 {new Date(log.createdAt).toLocaleString()}
                                             </span>
                                         </div>
-                                        <p className="text-xs text-[var(--text-secondary)] mt-2 leading-relaxed opacity-80">{log.description}</p>
+                                        <p className="text-xs text-[var(--text-secondary)] mt-2 leading-relaxed opacity-100">{log.details || 'No details tracked for this ping.'}</p>
                                         <div className="mt-4 flex items-center gap-3">
                                             <div className="w-5 h-5 bg-blue-500/20 rounded-full flex items-center justify-center">
                                                 <UserCircle className="w-3 h-3 text-blue-400" />
                                             </div>
                                             <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-tighter">
-                                                Triggered By: {log.User?.email || 'System Root'}
+                                                Triggered By: {log.User?.email || 'System Root'} <span className="ml-1 text-blue-500 opacity-60">[{log.User?.Role?.name || 'ROOT'}]</span>
                                             </span>
-                                            <span className="text-[10px] text-slate-500 ml-auto font-mono opacity-30">HEX_ID: {log.id.substring(0, 8).toUpperCase()}</span>
+                                            <span className="text-[10px] text-slate-400 font-bold ml-auto font-mono opacity-100">HEX_ID: {log.id.substring(0, 8).toUpperCase()}</span>
                                         </div>
                                     </div>
                                 </div>

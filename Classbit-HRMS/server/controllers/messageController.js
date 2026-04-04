@@ -3,8 +3,15 @@ const { Op } = require('sequelize');
 
 const sendMessage = async (req, res) => {
     try {
-        const { recipientId, departmentId, subject = 'Chat Message', content } = req.body;
-        const attachment = req.file ? req.file.path : null;
+        const { recipientId, departmentId, subject = 'Chat Message', content = '' } = req.body;
+        // Store a relative, forward-slash path so Express static can serve it correctly.
+        // req.file.path on Windows returns an absolute path — use filename only instead.
+        const attachment = req.file ? `uploads/messages/${req.file.filename}` : null;
+
+        // At least one of content or attachment must be present
+        if (!content.trim() && !attachment) {
+            return res.status(400).json({ message: 'Message content or attachment is required' });
+        }
 
         if (departmentId) {
             // Broadcast to department

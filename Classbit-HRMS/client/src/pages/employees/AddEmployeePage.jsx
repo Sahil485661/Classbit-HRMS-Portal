@@ -1,12 +1,44 @@
-import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
 import AddEmployeeForm from './AddEmployeeForm';
 import { ArrowLeft } from 'lucide-react';
 
 const AddEmployeePage = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const initialData = location.state?.employee || null;
+    const { id } = useParams();
+    
+    const [initialData, setInitialData] = useState(location.state?.employee || null);
+    const [loading, setLoading] = useState(!!id && !location.state?.employee);
+
+    useEffect(() => {
+        if (id && !location.state?.employee) {
+            const fetchEmployee = async () => {
+                try {
+                    const token = localStorage.getItem('token');
+                    const res = await axios.get(`http://localhost:5000/api/employees/${id}`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    setInitialData(res.data);
+                } catch (error) {
+                    console.error('Failed to fetch employee', error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            fetchEmployee();
+        }
+    }, [id, location.state]);
+
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh]">
+                <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="mt-4 text-[var(--text-secondary)] font-medium">Loading Employee Data...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="font-sans">

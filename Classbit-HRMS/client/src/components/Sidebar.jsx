@@ -5,7 +5,7 @@ import {
     LayoutDashboard, Users, Clock, Briefcase,
     CreditCard, Calendar, BarChart3, Wallet,
     MessageSquare, Settings, UserCog, ClipboardList,
-    AlertCircle, TrendingUp, UserPlus, History,
+    AlertCircle, TrendingUp, UserPlus, History, Receipt,
     ChevronDown, ChevronRight
 } from 'lucide-react';
 
@@ -19,34 +19,49 @@ const Sidebar = () => {
         location.pathname.startsWith('/attendance') || location.pathname.startsWith('/leave')
     );
 
+    const permissions = user?.permissions; // undefined if old session
+
     const menuItems = [
-        { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['Super Admin', 'HR', 'Manager', 'Employee'] },
-        { name: 'Employees', icon: Users, path: '/employees', roles: ['Super Admin', 'HR', 'Manager'] },
+        { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Dashboard' },
+        { name: 'Employees', icon: Users, path: '/employees', roles: ['Super Admin', 'HR', 'Manager'], permissionKey: 'Employees' },
         { 
             name: 'Attendance', 
             icon: Clock, 
             path: '#', // Submenu parent doesn't need strict path
-            roles: ['Super Admin', 'HR', 'Manager', 'Employee'],
+            roles: ['Super Admin', 'HR', 'Manager', 'Employee'], 
+            permissionKey: 'Attendance',
             subItems: [
                 { name: 'Attendance Log', path: '/attendance' },
                 { name: 'Leave', path: '/leave' }
             ]
         },
-        { name: 'Work', icon: Briefcase, path: '/work', roles: ['Super Admin', 'HR', 'Manager', 'Employee'] },
-        { name: 'Payroll', icon: CreditCard, path: '/payroll', roles: ['Super Admin', 'HR', 'Employee'] },
-        { name: 'Performance', icon: TrendingUp, path: '/performance', roles: ['Super Admin', 'HR', 'Manager', 'Employee'] },
-        { name: 'Loan', icon: Wallet, path: '/loan', roles: ['Super Admin', 'HR', 'Manager', 'Employee'] },
-        { name: 'Recruitment', icon: UserPlus, path: '/recruitment', roles: ['Super Admin', 'HR'] },
-        { name: 'Grievance', icon: AlertCircle, path: '/grievance', roles: ['Super Admin', 'HR', 'Manager', 'Employee'] },
+        { name: 'Work', icon: Briefcase, path: '/work', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Tasks' },
+        { name: 'Payroll', icon: CreditCard, path: '/payroll', roles: ['Super Admin', 'HR', 'Employee'], permissionKey: 'Payroll' },
+        { name: 'Reimbursements', icon: Receipt, path: '/reimbursements', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Reimbursements' },
+        { name: 'Loan', icon: Wallet, path: '/loan', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Loans' },
+        { name: 'Grievance', icon: AlertCircle, path: '/grievance', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Grievances' },
         { name: 'Accounting', icon: BarChart3, path: '/accounting', roles: ['Super Admin'] },
-        { name: 'Messages', icon: MessageSquare, path: '/messages', roles: ['Super Admin', 'HR', 'Manager', 'Employee'] },
+        { name: 'Messages', icon: MessageSquare, path: '/messages', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Messages' },
         { name: 'Managers', icon: UserCog, path: '/managers', roles: ['Super Admin'] },
         { name: 'Reports', icon: ClipboardList, path: '/reports', roles: ['Super Admin', 'HR'] },
-        { name: 'Setup', icon: Settings, path: '/setup', roles: ['Super Admin', 'HR'] },
+        { name: 'Setup', icon: Settings, path: '/setup', roles: ['Super Admin', 'HR'], permissionKey: 'Settings' },
         { name: 'Activities', icon: History, path: '/activities', roles: ['Super Admin'] },
     ];
 
-    const filteredItems = menuItems.filter(item => item.roles.includes(role));
+    const filteredItems = menuItems.filter(item => {
+        if (role === 'Super Admin' && item.roles.includes('Super Admin')) return true;
+        
+        // Handle un-migrated JSON field where a role has literally zero permissions set in DB yet by the admin
+        // OR handle old stale localStorage session that doesn't have permissions property
+        if (permissions === undefined || permissions.length === 0) {
+            return item.roles.includes(role);
+        }
+
+        if (item.permissionKey) {
+            return permissions.includes(item.permissionKey);
+        }
+        return item.roles.includes(role);
+    });
 
     return (
         <aside className="w-64 bg-[var(--sidebar-bg)] border-r border-[var(--border-color)] flex flex-col h-full transition-colors">
@@ -62,8 +77,8 @@ const Sidebar = () => {
                                 <button
                                     onClick={() => setIsAttendanceOpen(!isAttendanceOpen)}
                                     className={`
-                                        flex items-center justify-between w-full px-4 py-3 rounded-lg text-sm font-medium transition-all
-                                        ${isAttendanceOpen ? 'bg-[var(--hover-bg)] text-[var(--text-primary)]' : 'text-[var(--text-muted)] hover:bg-[var(--hover-bg)] hover:text-[var(--text-primary)]'}
+                                        flex items-center justify-between w-full px-4 py-3 rounded-lg text-sm font-bold transition-all sidebar-btn
+                                        ${isAttendanceOpen ? 'bg-[var(--hover-bg)] text-[var(--text-primary)]' : 'text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'}
                                     `}
                                 >
                                     <div className="flex items-center gap-3">
@@ -80,10 +95,10 @@ const Sidebar = () => {
                                                 key={subItem.name}
                                                 to={subItem.path}
                                                 className={({ isActive }) => `
-                                                    block px-3 py-2 rounded-lg text-[13px] font-medium transition-all
+                                                    block px-3 py-2 rounded-lg text-[13px] font-bold transition-all
                                                     ${isActive
-                                                        ? 'bg-blue-600/10 text-blue-400 font-semibold'
-                                                        : 'text-[var(--text-secondary)] hover:bg-[var(--hover-bg)] hover:text-[var(--text-primary)]'}
+                                                        ? 'bg-blue-600/10 text-[var(--text-primary)]'
+                                                        : 'text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'}
                                                 `}
                                             >
                                                 {subItem.name}
@@ -100,10 +115,10 @@ const Sidebar = () => {
                             key={item.name}
                             to={item.path}
                             className={({ isActive }) => `
-                                flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all
+                                flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all
                                 ${isActive
-                                    ? 'bg-blue-600/10 text-blue-400 border border-blue-600/20'
-                                    : 'text-[var(--text-muted)] hover:bg-[var(--hover-bg)] hover:text-[var(--text-primary)]'
+                                    ? 'bg-[var(--sidebar-bg)] shadow-[inset_4px_0_0_0_#3b82f6] text-[var(--text-primary)] bg-black/5 dark:bg-white/5'
+                                    : 'text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'
                                 }
                             `}
                         >

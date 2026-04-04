@@ -14,6 +14,27 @@ const CompanySettings = () => {
     });
     const [loading, setLoading] = useState(false);
 
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await axios.get('http://localhost:5000/api/setup?category=General', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                
+                // Find company_details from array
+                const detailSetting = res.data.find(s => s.key === 'company_details');
+                if (detailSetting && detailSetting.value) {
+                    const parsed = typeof detailSetting.value === 'string' ? JSON.parse(detailSetting.value) : detailSetting.value;
+                    setSettings(prev => ({ ...prev, ...parsed }));
+                }
+            } catch (error) {
+                console.error('Failed to load company details', error);
+            }
+        };
+        fetchSettings();
+    }, []);
+
     const handleSave = async (e) => {
         e.preventDefault();
         setLoading(true);

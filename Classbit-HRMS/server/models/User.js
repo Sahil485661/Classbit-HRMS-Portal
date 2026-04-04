@@ -31,9 +31,22 @@ const User = sequelize.define('User', {
     lastLogin: {
         type: DataTypes.DATE,
         allowNull: true
+    },
+    needsPasswordChange: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: true
+    },
+    resetOtp: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    resetOtpExpiry: {
+        type: DataTypes.DATE,
+        allowNull: true
     }
 }, {
     timestamps: true,
+    paranoid: true,
     hooks: {
         beforeCreate: async (user) => {
             if (user.password) {

@@ -1,6 +1,6 @@
 const {
     Employee, Department, Attendance, Grievance,
-    Task, Transaction, Candidate, User
+    Task, Transaction, User
 } = require('../models');
 const { Op } = require('sequelize');
 
@@ -8,7 +8,6 @@ const getAdminStats = async (req, res) => {
     try {
         const employeeCount = await Employee.count();
         const grievanceCount = await Grievance.count({ where: { status: 'Open' } });
-        const jobSeekerCount = await Candidate.count();
         const activeTasks = await Task.count({ where: { status: { [Op.ne]: 'Completed' } } });
 
         // Payroll sum for current month
@@ -47,9 +46,8 @@ const getAdminStats = async (req, res) => {
             summary: [
                 { name: 'Employees', value: employeeCount, module: 'employees' },
                 { name: 'Grievances', value: grievanceCount, module: 'grievance' },
-                { name: 'Job Seekers', value: jobSeekerCount, module: 'recruitment' },
                 { name: 'Active Work', value: activeTasks, module: 'work' },
-                { name: 'Total Expenses', value: `$${totalExpenses.toLocaleString()}`, module: 'accounting' }
+                { name: 'Total Expenses', value: `₹${totalExpenses.toLocaleString('en-IN')}`, module: 'accounting' }
             ],
             attendanceTrend: attendanceData,
             genderDistribution: [

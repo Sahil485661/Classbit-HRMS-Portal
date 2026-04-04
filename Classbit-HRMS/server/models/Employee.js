@@ -120,9 +120,18 @@ const Employee = sequelize.define('Employee', {
     upiId: {
         type: DataTypes.STRING,
         allowNull: true
+    },
+    probationPeriodMonths: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+    },
+    trainingPeriodMonths: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
     }
 }, {
-    timestamps: true
+    timestamps: true,
+    paranoid: true
 });
 
 module.exports = Employee;

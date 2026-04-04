@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useSelector } from 'react-redux';
 import {
     User, Mail, Lock, Briefcase, Database, UserCheck, Calendar,
     Users, Phone, MapPin, Flag, FileText, Image as ImageIcon, Heart
@@ -34,7 +35,9 @@ const AddEmployeeForm = ({ onSuccess, onCancel, initialData = null }) => {
         bankAccountNumber: initialData?.bankAccountNumber || '',
         bankIfscCode: initialData?.bankIfscCode || '',
         accountHolderName: initialData?.accountHolderName || '',
-        upiId: initialData?.upiId || ''
+        upiId: initialData?.upiId || '',
+        trainingPeriodMonths: initialData?.trainingPeriodMonths !== undefined && initialData?.trainingPeriodMonths !== null ? initialData.trainingPeriodMonths : '',
+        probationPeriodMonths: initialData?.probationPeriodMonths !== undefined && initialData?.probationPeriodMonths !== null ? initialData.probationPeriodMonths : ''
     });
 
     const [profilePicture, setProfilePicture] = useState(null);
@@ -42,6 +45,9 @@ const AddEmployeeForm = ({ onSuccess, onCancel, initialData = null }) => {
     const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
+
+    // Get current user to check role
+    const { user } = useSelector(state => state.auth);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -246,6 +252,17 @@ const AddEmployeeForm = ({ onSuccess, onCancel, initialData = null }) => {
                 </div>
             </div>
 
+            {user?.role === 'Super Admin' && (
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className={labelClass}>
+                            Password <span className="text-slate-400 font-normal lowercase">(For portal access)</span>
+                        </label>
+                        {renderInput('password', 'text', initialData ? '(Leave blank to keep current)' : 'Default is password123', Lock, false)}
+                    </div>
+                </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <label className={labelClass}>Gender</label>
@@ -275,24 +292,34 @@ const AddEmployeeForm = ({ onSuccess, onCancel, initialData = null }) => {
 
             <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <label className={labelClass}>Role</label>
-                    {renderInput('roleId', 'text', '', UserCheck, true, true, [
-                        <option key="default" value="">Select Role</option>,
-                        ...roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)
-                    ])}
-                </div>
-                <div>
                     <label className={labelClass}>Department</label>
                     {renderInput('departmentId', 'text', '', Briefcase, true, true, [
                         <option key="default" value="">Select Dept</option>,
                         ...departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)
                     ])}
                 </div>
+                <div>
+                    <label className={labelClass}>Role</label>
+                    {renderInput('roleId', 'text', '', UserCheck, true, true, [
+                        <option key="default" value="">Select Role</option>,
+                        ...roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)
+                    ])}
+                </div>
             </div>
 
-            <div>
-                <label className={labelClass}>Designation</label>
-                {renderInput('designation', 'text', 'e.g. Software Engineer', null, true)}
+            <div className="grid grid-cols-3 gap-4">
+                <div>
+                    <label className={labelClass}>Designation</label>
+                    {renderInput('designation', 'text', 'e.g. Software Engineer', null, true)}
+                </div>
+                <div>
+                    <label className={labelClass}>Training (Months)</label>
+                    {renderInput('trainingPeriodMonths', 'number', '0')}
+                </div>
+                <div>
+                    <label className={labelClass}>Probation (Months)</label>
+                    {renderInput('probationPeriodMonths', 'number', '0')}
+                </div>
             </div>
 
             <h3 className={sectionTitleClass}>Personal & Identity Details</h3>

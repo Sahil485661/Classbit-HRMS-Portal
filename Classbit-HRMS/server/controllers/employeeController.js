@@ -1,10 +1,32 @@
 const { Employee, User, Role, Department, Loan } = require('../models');
+const { createLog } = require('./activityController');
 
 const getAllEmployees = async (req, res) => {
     try {
         const employees = await Employee.findAll({
             include: [
-                { model: User, attributes: ['email', 'isActive', 'lastLogin'], include: [Role] },
+                { model: User, attributes: ['id', 'email', 'isActive', 'lastLogin', 'roleId'], include: [Role] },
+                { model: Department }
+            ]
+        });
+        res.json(employees);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const getDeletedEmployees = async (req, res) => {
+    try {
+        const { Op } = require('sequelize');
+        const employees = await Employee.findAll({
+            where: {
+                deletedAt: {
+                    [Op.not]: null
+                }
+            },
+            paranoid: false,
+            include: [
+                { model: User, attributes: ['id', 'email', 'isActive', 'lastLogin', 'roleId'], include: [Role], paranoid: false },
                 { model: Department }
             ]
         });
@@ -17,8 +39,9 @@ const getAllEmployees = async (req, res) => {
 const getEmployeeById = async (req, res) => {
     try {
         const employee = await Employee.findByPk(req.params.id, {
+            paranoid: false,
             include: [
-                { model: User, attributes: ['email', 'isActive', 'lastLogin'], include: [Role] },
+                { model: User, attributes: ['id', 'email', 'isActive', 'lastLogin', 'roleId'], include: [Role], paranoid: false },
                 { model: Department },
                 { model: Loan }
             ]
@@ -40,7 +63,8 @@ const createEmployee = async (req, res) => {
             whatsappNumber, linkedinProfile, maritalStatus,
             emergencyContact, emergencyContactName, nationality,
             phone, dob, address, bankName, bankAccountNumber,
-            bankIfscCode, accountHolderName, upiId
+            bankIfscCode, accountHolderName, upiId,
+            trainingPeriodMonths, probationPeriodMonths
         } = req.body;
 
         const profilePicture = req.file ? req.file.filename : null;
@@ -81,9 +105,12 @@ const createEmployee = async (req, res) => {
             bankIfscCode,
             accountHolderName,
             upiId,
+            trainingPeriodMonths,
+            probationPeriodMonths,
             profilePicture
         });
 
+        await createLog(req.user.id, 'CREATE_EMPLOYEE', 'Employees', `Added new employee ${firstName} ${lastName} (${employeeId}).`);
         res.status(201).json(employee);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -114,6 +141,7 @@ const updateEmployee = async (req, res) => {
             }
         }
 
+        await createLog(req.user.id, 'UPDATE_EMPLOYEE', 'Employees', `Updated profile data for ${employee.firstName} ${employee.lastName}.`);
         res.json(employee);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -133,6 +161,7 @@ const deleteEmployee = async (req, res) => {
         user.isActive = false;
         await user.save();
 
+        await createLog(req.user.id, 'DEACTIVATE_EMPLOYEE', 'Employees', `Deactivated employee ${employee.firstName} ${employee.lastName}.`);
         res.json({ message: 'Employee deactivated successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -150,8 +179,23 @@ const getRoles = async (req, res) => {
 
 const createRole = async (req, res) => {
     try {
-        const role = await Role.create(req.body);
+        const { name, description, permissions } = req.body;
+        const role = await Role.create({ name, description, permissions: permissions || [] });
         res.status(201).json(role);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const updateRole = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, description, permissions } = req.body;
+        const role = await Role.findByPk(id);
+        if (!role) return res.status(404).json({ message: 'Role not found' });
+
+        await role.update({ name, description, permissions: permissions || [] });
+        res.json(role);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -189,6 +233,7 @@ const reactivateEmployee = async (req, res) => {
             await user.save();
         }
 
+        await createLog(req.user.id, 'REACTIVATE_EMPLOYEE', 'Employees', `Reactivated employee ${employee.firstName} ${employee.lastName}.`);
         res.json({ message: 'Employee reactivated successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -202,9 +247,6 @@ const fullDeleteEmployee = async (req, res) => {
 
         const userId = employee.userId;
 
-        // Delete User (Cascade will delete Employee)
-        // Note: Check for associations that might prevent deletion if needed.
-        // For simplicity, we assume CASCADE handles most things or we let it error if not.
         const user = await User.findByPk(userId);
         if (user) {
             await user.destroy();
@@ -213,10 +255,46 @@ const fullDeleteEmployee = async (req, res) => {
             await employee.destroy();
         }
 
+        await createLog(req.user.id, 'DELETE_EMPLOYEE', 'Employees', `Permanently deleted employee ${employee.firstName} ${employee.lastName}.`);
         res.json({ message: 'Employee data fully deleted successfully' });
     } catch (error) {
         console.error('Error in fullDeleteEmployee:', error);
         res.status(500).json({ message: 'Error deleting employee: ' + error.message });
+    }
+};
+
+const adminForcePasswordReset = async (req, res) => {
+    try {
+        if (req.user.role !== 'Super Admin') {
+            return res.status(403).json({ message: 'Only Super Admin can force password resets.' });
+        }
+        
+        const { id } = req.params;
+        const employee = await Employee.findByPk(id, { include: [User] });
+        if (!employee || !employee.User) return res.status(404).json({ message: 'Employee not found' });
+        
+        const charsLower = 'abcdefghijklmnopqrstuvwxyz';
+        const charsUpper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const numbers = '0123456789';
+        const specials = '@$!%*?&';
+        
+        let newPassword = '';
+        newPassword += charsUpper.charAt(Math.floor(Math.random() * charsUpper.length));
+        newPassword += numbers.charAt(Math.floor(Math.random() * numbers.length));
+        newPassword += specials.charAt(Math.floor(Math.random() * specials.length));
+        for(let i=0; i<5; i++) {
+            newPassword += charsLower.charAt(Math.floor(Math.random() * charsLower.length));
+        }
+
+        employee.User.password = newPassword;
+        employee.User.needsPasswordChange = true;
+        await employee.User.save();
+
+        await createLog(req.user.id, 'FORCE_PASSWORD_RESET', 'Employees', `Admin forced password reset for ${employee.firstName} ${employee.lastName}`);
+        
+        res.json({ message: 'Password reset successfully', tempPassword: newPassword });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
 };
 
@@ -228,8 +306,11 @@ module.exports = {
     deleteEmployee,
     getRoles,
     createRole,
+    updateRole,
     getDepartments,
     createDepartment,
     reactivateEmployee,
-    fullDeleteEmployee
+    fullDeleteEmployee,
+    getDeletedEmployees,
+    adminForcePasswordReset
 };

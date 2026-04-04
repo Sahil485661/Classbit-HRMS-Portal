@@ -19,6 +19,9 @@ const AttendancePage = () => {
     const todayStr = new Date().toLocaleDateString('en-CA');
     const todayRecord = attendance.find(rec => rec.date === todayStr && (user.role === 'Employee' ? true : rec.employeeId === user.employeeId));
     
+    const nowHour = new Date().getHours();
+    const isAfterOfficeHours = nowHour >= 18;
+    
     const stats = {
         present: attendance.filter(r => r.status === 'Present' || r.status === 'Late').length,
         late: attendance.filter(r => r.status === 'Late').length,
@@ -154,7 +157,7 @@ const AttendancePage = () => {
             case 'Present': return <span className="bg-green-500/10 text-green-500 border border-green-500/20 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">Present</span>;
             case 'Late': return <span className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">Late</span>;
             case 'Absent': return <span className="bg-red-500/10 text-red-500 border border-red-500/20 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">Absent</span>;
-            case 'Tea Break': case 'Coffee Break': case 'Lunch Break': case 'Restroom Break': case 'Stretching Break': case 'Official Break':
+            case 'Tea Break': case 'Coffee Break': case 'Lunch Break': case 'Rest Break': case 'Restroom Break': case 'Stretching Break': case 'Official Break':
                 return <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">{status}</span>;
             default: return <span className="bg-slate-500/10 text-slate-400 border border-slate-500/20 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">{status}</span>;
         }
@@ -212,34 +215,35 @@ const AttendancePage = () => {
                 </div>
                 <div className="flex gap-3">
                     {user.role === 'Employee' && (
-                        <div className="flex gap-3 mr-4 border-r border-[var(--border-color)] pr-4">
-                            <button
-                                onClick={handleClockIn}
-                                disabled={!!todayRecord || isClocking}
-                                className={`px-5 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${!!todayRecord || isClocking ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-900/20'}`}
-                            >
-                                <CheckCircle className="w-4 h-4" />
-                                {todayRecord ? 'Clocked In' : 'Clock In'}
-                            </button>
-                            <button
-                                onClick={handleClockOut}
-                                disabled={!todayRecord || todayRecord?.checkOut || isClocking}
-                                className={`px-5 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${!todayRecord || todayRecord?.checkOut || isClocking ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/20'}`}
-                            >
-                                <XCircle className="w-4 h-4" />
-                                {todayRecord?.checkOut ? 'Clocked Out' : 'Clock Out'}
-                            </button>
+                        <div className="flex flex-col justify-center mr-4 border-r border-[var(--border-color)] pr-4">
+                            <p className="text-xs text-[var(--text-secondary)] font-medium mb-1.5 self-start">Office Time: 09:00 AM - 06:00 PM</p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={handleClockIn}
+                                    disabled={!!todayRecord || isClocking || isAfterOfficeHours}
+                                    className={`px-5 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${!!todayRecord || isClocking || isAfterOfficeHours ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-900/20'}`}
+                                >
+                                    <CheckCircle className="w-4 h-4" />
+                                    {todayRecord ? 'Clocked In' : isAfterOfficeHours ? 'Disabled (> 6:00 PM)' : 'Clock In'}
+                                </button>
+                                <button
+                                    onClick={handleClockOut}
+                                    disabled={!todayRecord || todayRecord?.checkOut || isClocking}
+                                    className={`px-5 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${!todayRecord || todayRecord?.checkOut || isClocking ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/20'}`}
+                                >
+                                    <XCircle className="w-4 h-4" />
+                                    {todayRecord?.checkOut ? 'Clocked Out' : 'Clock Out'}
+                                </button>
+                            </div>
                         </div>
                     )}
                     {user.role === 'Employee' && todayRecord && !todayRecord.checkOut && (
                         <div className="flex gap-2 mr-4 border-r border-[var(--border-color)] pr-4">
                             {[
                                 { label: 'Working', value: 'Working', color: 'bg-blue-600', hover: 'hover:bg-blue-500' },
-                                { label: 'Tea', value: 'Tea Break', color: 'bg-amber-600', hover: 'hover:bg-amber-500' },
-                                { label: 'Coffee', value: 'Coffee Break', color: 'bg-orange-700', hover: 'hover:bg-orange-600' },
+                                { label: 'Tea/Coffee', value: 'Tea Break', color: 'bg-amber-600', hover: 'hover:bg-amber-500' },
                                 { label: 'Lunch', value: 'Lunch Break', color: 'bg-rose-600', hover: 'hover:bg-rose-500' },
-                                { label: 'Restroom', value: 'Restroom Break', color: 'bg-indigo-600', hover: 'hover:bg-indigo-500' },
-                                { label: 'Stretching', value: 'Stretching Break', color: 'bg-emerald-600', hover: 'hover:bg-emerald-500' },
+                                { label: 'Rest', value: 'Rest Break', color: 'bg-emerald-600', hover: 'hover:bg-emerald-500' },
                                 { label: 'Official', value: 'Official Break', color: 'bg-purple-600', hover: 'hover:bg-purple-500' },
                             ].map((opt) => (
                                 <button

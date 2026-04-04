@@ -25,11 +25,15 @@ app.use('/api/accounting', require('./routes/accountingRoutes'));
 app.use('/api/messages', require('./routes/messageRoutes'));
 app.use('/api/notices', require('./routes/noticeRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
-app.use('/api/performance', require('./routes/performanceRoutes'));
-app.use('/api/recruitment', require('./routes/recruitmentRoutes'));
+
 app.use('/api/activities', require('./routes/activityRoutes'));
+app.use('/api/setup/compliance', require('./routes/complianceRoutes'));
 app.use('/api/setup', require('./routes/setupRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
+app.use('/api/salary', require('./routes/salaryRoutes'));
+app.use('/api/reimbursements', require('./routes/reimbursementRoutes'));
+app.use('/api/email-settings', require('./routes/emailSettingsRoutes'));
+app.use('/api/email-actions', require('./routes/emailActionsRoutes'));
 
 app.use('/uploads', express.static('uploads'));
 
