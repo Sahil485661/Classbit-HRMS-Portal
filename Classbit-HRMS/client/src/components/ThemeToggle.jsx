@@ -32,17 +32,27 @@ const ThemeToggle = () => {
     };
 
     return (
-        <button
-            onClick={toggleTheme}
-            className="fixed bottom-8 right-8 p-4 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all border border-slate-700 group flex items-center justify-center shadow-xl shadow-blue-900/20 hover:scale-110 z-[999] hover:shadow-2xl hover:shadow-blue-500/20"
-            title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
-        >
-            {isDark ? (
-                <Sun className="w-6 h-6 text-amber-400 group-hover:rotate-45 transition-transform" />
-            ) : (
-                <Moon className="w-6 h-6 text-indigo-400 group-hover:-rotate-12 transition-transform" />
-            )}
-        </button>
+        <div className="p-4 border-t border-[var(--border-color)] mt-auto shrink-0">
+            <button
+                onClick={toggleTheme}
+                className="w-full bg-[var(--bg-secondary)] hover:bg-[var(--hover-bg)] p-3.5 rounded-xl border border-[var(--border-color)] transition-all flex items-center justify-between group shadow-sm hover:shadow-md"
+                title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+                <div className="text-left flex flex-col gap-1">
+                    <span className="text-[10px] text-[var(--text-secondary)] uppercase font-black tracking-widest">Appearance</span>
+                    <span className="text-[13px] font-bold text-[var(--text-primary)] group-hover:text-blue-500 transition-colors">
+                        {isDark ? 'Dark Mode' : 'Light Mode'}
+                    </span>
+                </div>
+                <div className="w-8 h-8 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] flex items-center justify-center shadow-inner group-hover:scale-105 transition-all">
+                    {isDark ? (
+                        <Moon className="w-4 h-4 text-indigo-400 group-hover:-rotate-12 transition-transform" />
+                    ) : (
+                        <Sun className="w-4 h-4 text-amber-500 group-hover:rotate-45 transition-transform" />
+                    )}
+                </div>
+            </button>
+        </div>
     );
 };
 

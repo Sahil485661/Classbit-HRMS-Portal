@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import Modal from './Modal';
 
-const EventCalendar = ({ permittedDesignations }) => {
+const EventCalendar = ({ permittedDesignations, viewMode = 'month' }) => {
     const { user } = useSelector((state) => state.auth);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [allEvents, setAllEvents] = useState([]);
@@ -163,16 +163,27 @@ const EventCalendar = ({ permittedDesignations }) => {
         setCurrentDate(new Date(parseInt(year), parseInt(month) - 1, 1));
     };
 
-    const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-    const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+    const prevMonth = () => {
+        if (viewMode === 'week') {
+            setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 7));
+        } else {
+            setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+        }
+    };
+    const nextMonth = () => {
+        if (viewMode === 'week') {
+            setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 7));
+        } else {
+            setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+        }
+    };
 
-    const openDay = (day) => {
-        const d = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    const openDay = (d) => {
         const dStr = d.toLocaleDateString();
         const eventsToday = allEvents.filter(ev => ev.dateObj.toLocaleDateString() === dStr);
         setSelectedDateStr(dStr);
         setSelectedDayEvents(eventsToday);
-        setFormData({ ...formData, eventDate: `${currentDate.getFullYear()}-${String(currentDate.getMonth()+1).padStart(2, '0')}-${String(day).padStart(2, '0')}` });
+        setFormData({ ...formData, eventDate: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` });
         setShowDayModal(true);
     };
 
@@ -219,14 +230,20 @@ const EventCalendar = ({ permittedDesignations }) => {
                             </div>
                         </div>
                     </div>
-                    <div className="flex items-center gap-4 bg-[var(--card-bg)] p-2 rounded-2xl border border-[var(--border-color)] shadow-sm">
+                    <div className="flex items-center gap-2 lg:gap-4 bg-[var(--card-bg)] p-2 rounded-2xl border border-[var(--border-color)] shadow-sm">
                         <button onClick={prevMonth} className="p-2 text-slate-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-xl transition-colors"><ChevronLeft className="w-5 h-5" /></button>
-                        <input 
-                            type="month" 
-                            className="bg-transparent text-sm lg:text-base font-bold text-[var(--text-primary)] w-32 lg:w-36 text-center focus:outline-none cursor-pointer"
-                            value={`${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`}
-                            onChange={handleQuickJump}
-                        />
+                        {viewMode === 'week' ? (
+                            <div className="text-sm lg:text-base font-bold text-[var(--text-primary)] px-2 text-center w-32 lg:w-36">
+                                {currentDate.toLocaleDateString([], { month: 'short', year: 'numeric' })}
+                            </div>
+                        ) : (
+                            <input 
+                                type="month" 
+                                className="bg-transparent text-sm lg:text-base font-bold text-[var(--text-primary)] w-32 lg:w-36 text-center focus:outline-none cursor-pointer"
+                                value={`${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`}
+                                onChange={handleQuickJump}
+                            />
+                        )}
                         <button onClick={nextMonth} className="p-1.5 lg:p-2 text-slate-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-xl transition-colors"><ChevronRight className="w-5 h-5" /></button>
                     </div>
                 </div>
@@ -244,18 +261,24 @@ const EventCalendar = ({ permittedDesignations }) => {
 
                     {/* Calendar Grid */}
                     <div className="grid grid-cols-7 gap-1 flex-1 min-h-0 lg:gap-2">
-                        {Array.from({ length: startDay }).map((_, i) => <div key={`empty-${i}`} className="bg-slate-500/5 rounded-xl border border-dashed border-[var(--border-color)] opacity-50 min-h-[60px] lg:min-h-[90px]" />)}
+                        {viewMode === 'month' && Array.from({ length: startDay }).map((_, i) => <div key={`empty-${i}`} className="bg-slate-500/5 rounded-xl border border-dashed border-[var(--border-color)] opacity-50 min-h-[60px] lg:min-h-[90px]" />)}
                         
-                        {Array.from({ length: daysInMonth }).map((_, i) => {
+                        {(viewMode === 'month' ? Array.from({ length: daysInMonth }).map((_, i) => {
                             const day = i + 1;
-                            const dStr = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toLocaleDateString();
+                            return new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+                        }) : (() => {
+                            const first = currentDate.getDate() - currentDate.getDay();
+                            return Array.from({ length: 7 }).map((_, i) => new Date(currentDate.getFullYear(), currentDate.getMonth(), first + i));
+                        })()).map((d) => {
+                            const day = d.getDate();
+                            const dStr = d.toLocaleDateString();
                             const dailyEvents = allEvents.filter(n => n.dateObj.toLocaleDateString() === dStr);
                             const isToday = new Date().toLocaleDateString() === dStr;
                             
                             return (
                                 <button 
-                                    key={day} 
-                                    onClick={() => openDay(day)}
+                                    key={dStr} 
+                                    onClick={() => openDay(d)}
                                     className={`min-h-[60px] lg:min-h-[100px] p-1.5 lg:p-2.5 border border-[var(--border-color)] rounded-xl flex flex-col items-start justify-start hover:border-blue-500/50 hover:shadow-lg transition-all overflow-hidden
                                         ${isToday ? 'bg-blue-500/5 border-blue-500/40 ring-1 ring-blue-500 shadow-blue-500/10' : 'bg-[var(--card-bg)]'}
                                     `}

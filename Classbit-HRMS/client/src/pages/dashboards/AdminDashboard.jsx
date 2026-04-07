@@ -338,8 +338,8 @@ const AdminDashboard = () => {
 
             {/* Scheduling & Agenda Framework */}
             <div className="pt-4">
-                <h3 className="text-xl font-bold text-[var(--text-primary)] mb-6 tracking-tight">System Calendar & Scheduling</h3>
-                <EventCalendar />
+                <h3 className="text-xl font-bold text-[var(--text-primary)] mb-6 tracking-tight">System Week Calendar</h3>
+                <EventCalendar viewMode="week" />
             </div>
 
         </div>

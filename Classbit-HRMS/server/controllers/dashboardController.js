@@ -33,7 +33,8 @@ const getAdminStats = async (req, res) => {
                     status: { [Op.in]: ['Present', 'Late', 'Half Day'] } 
                 } 
             });
-            const absent = await Attendance.count({ where: { date: dateStr, status: 'Absent' } });
+            const totalActiveEmployees = await Employee.count({ where: { status: 'Active' } });
+            const absent = Math.max(0, totalActiveEmployees - present);
 
             attendanceData.push({ name: dayName, present, absent });
         }

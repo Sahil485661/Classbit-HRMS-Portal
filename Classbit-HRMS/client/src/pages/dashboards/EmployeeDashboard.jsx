@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux';
 import {
     Clock, Briefcase, MessageSquare,
     Quote, Play, Square, CheckCircle2,
-    Calendar, AlertCircle
+    Calendar, AlertCircle, XCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -25,6 +25,8 @@ const EmployeeDashboard = () => {
     const [isClockedIn, setIsClockedIn] = useState(false);
     const [shiftCompleted, setShiftCompleted] = useState(false);
     const [clockInTime, setClockInTime] = useState(null);
+    const [currentStatus, setCurrentStatus] = useState(null);
+    const [showStatusMenu, setShowStatusMenu] = useState(false);
     const [myWork, setMyWork] = useState([]);
     const [quote, setQuote] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -74,6 +76,7 @@ const EmployeeDashboard = () => {
                     if (todayAtt) {
                         const checkInDate = new Date(todayAtt.checkIn);
                         setClockInTime(checkInDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+                        setCurrentStatus(todayAtt.currentStatus || 'Working');
                         
                         if (!todayAtt.checkOut) {
                             setIsClockedIn(true);
@@ -123,6 +126,17 @@ const EmployeeDashboard = () => {
     };
 
 
+    const handleStatusChange = async (type) => {
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post('http://localhost:5000/api/attendance/update-status', { type }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setCurrentStatus(type);
+        } catch (error) {
+            alert(error.response?.data?.message || 'Status update failed');
+        }
+    };
 
     if (loading) return <div className="p-8 text-slate-400 italic">Initializing workplace...</div>;
 
@@ -139,8 +153,10 @@ const EmployeeDashboard = () => {
                 </div>
 
                 {/* Attendance Widget */}
-                <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-4 rounded-2xl flex items-center gap-6 shadow-xl relative overflow-hidden transition-colors">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16 blur-2xl" />
+                <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-4 rounded-2xl flex items-center gap-6 shadow-xl relative transition-colors">
+                    <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16 blur-2xl" />
+                    </div>
                     <div className="text-right relative z-10">
                         <p className="text-[10px] text-[var(--text-secondary)] uppercase font-bold tracking-widest">Shift Status</p>
                         <p className="text-sm font-bold text-[var(--text-primary)] mt-1 mb-1">
@@ -148,24 +164,67 @@ const EmployeeDashboard = () => {
                         </p>
                         <p className="text-xs text-[var(--text-secondary)]">Office Time: 09:00 AM - 06:00 PM</p>
                     </div>
-                    <button
-                        onClick={handleClockToggle}
-                        disabled={shiftCompleted || (!isClockedIn && isAfterOfficeHours)}
-                        className={`
-                            relative z-10 flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all transform active:scale-95 shadow-lg
-                            ${shiftCompleted 
-                                ? 'bg-slate-500 hover:bg-slate-500 text-white shadow-none cursor-not-allowed opacity-50'
-                                : (!isClockedIn && isAfterOfficeHours)
-                                ? 'bg-slate-700 hover:bg-slate-700 text-slate-400 shadow-none cursor-not-allowed'
-                                : isClockedIn
-                                ? 'bg-red-500 hover:bg-red-400 text-white shadow-red-900/20'
-                                : 'bg-green-600 hover:bg-green-500 text-white shadow-green-900/20'
-                            }
-                        `}
-                    >
-                        {shiftCompleted ? <CheckCircle2 className="w-4 h-4 fill-current text-[var(--card-bg)]" /> : isClockedIn ? <Square className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
-                        {shiftCompleted ? 'Shift Over' : (!isClockedIn && isAfterOfficeHours) ? 'Disabled' : isClockedIn ? 'Clock Out' : 'Clock In'}
-                    </button>
+                    {!isClockedIn ? (
+                        <button
+                            onClick={handleClockToggle}
+                            disabled={shiftCompleted || isAfterOfficeHours}
+                            className={`
+                                relative z-10 flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all transform active:scale-95 shadow-lg
+                                ${shiftCompleted 
+                                    ? 'bg-slate-500 hover:bg-slate-500 text-white shadow-none cursor-not-allowed opacity-50'
+                                    : isAfterOfficeHours
+                                    ? 'bg-slate-700 hover:bg-slate-700 text-slate-400 shadow-none cursor-not-allowed'
+                                    : 'bg-green-600 hover:bg-green-500 text-white shadow-green-900/20'
+                                }
+                            `}
+                        >
+                            {shiftCompleted ? <CheckCircle2 className="w-4 h-4 fill-current text-[var(--card-bg)]" /> : <Play className="w-4 h-4 fill-current" />}
+                            {shiftCompleted ? 'Shift Over' : isAfterOfficeHours ? 'Disabled' : 'Clock In'}
+                        </button>
+                    ) : (
+                        <div className="relative z-50">
+                            <button
+                                onClick={() => setShowStatusMenu(!showStatusMenu)}
+                                className="relative flex items-center justify-between min-w-[140px] gap-2 px-6 py-2.5 rounded-xl font-bold transition-all transform shadow-lg bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Clock className="w-4 h-4" />
+                                    {currentStatus || 'Working'}
+                                </div>
+                                <span className="text-[10px]">▼</span>
+                            </button>
+                            
+                            {showStatusMenu && (
+                                <div className="absolute right-0 top-full mt-2 w-48 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-xl shadow-2xl py-2 animate-in fade-in slide-in-from-top-2 z-50">
+                                    {[
+                                        { label: 'Working', value: 'Working', color: 'text-blue-500' },
+                                        { label: 'Tea/Coffee', value: 'Tea Break', color: 'text-amber-500' },
+                                        { label: 'Lunch', value: 'Lunch Break', color: 'text-rose-500' },
+                                        { label: 'Rest', value: 'Rest Break', color: 'text-emerald-500' },
+                                        { label: 'Official', value: 'Official Break', color: 'text-purple-500' },
+                                    ].map((opt) => (
+                                        <button
+                                            key={opt.value}
+                                            onClick={() => { handleStatusChange(opt.value); setShowStatusMenu(false); }}
+                                            disabled={currentStatus === opt.value}
+                                            className={`w-full text-left px-4 py-2 text-sm font-medium hover:bg-[var(--hover-bg)] transition-colors flex items-center gap-2 ${currentStatus === opt.value ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}
+                                        >
+                                            <span className={`w-2 h-2 rounded-full bg-current ${opt.color}`}></span>
+                                            {opt.label}
+                                        </button>
+                                    ))}
+                                    <div className="h-px bg-[var(--border-color)] my-2"></div>
+                                    <button
+                                        onClick={() => { handleClockToggle(); setShowStatusMenu(false); }}
+                                        className="w-full text-left px-4 py-2 text-sm font-bold text-red-500 hover:bg-red-500/10 flex items-center gap-2 transition-colors"
+                                    >
+                                        <XCircle className="w-4 h-4" />
+                                        Clock Out
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -232,7 +291,7 @@ const EmployeeDashboard = () => {
 
                 {/* Event Calendar - Full Width Below */}
                 <div className="pt-2">
-                    <EventCalendar permittedDesignations={permittedDesignations} />
+                    <EventCalendar permittedDesignations={permittedDesignations} viewMode="week" />
                 </div>
             </div>
         </div>

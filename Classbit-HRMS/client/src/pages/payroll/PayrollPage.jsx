@@ -36,6 +36,9 @@ export default function PayrollPage() {
     const canSeeAll  = isHR || isFinance || isManager;
 
     const [payslips, setPayslips]         = useState([]);
+    const [myPayslips, setMyPayslips]     = useState([]);
+    const [mySalary, setMySalary]         = useState(null);
+    const [activeTab, setActiveTab]       = useState(canSeeAll ? 'organization' : 'my_payslips');
     const [loading, setLoading]           = useState(true);
     const [search, setSearch]             = useState('');
     const [filterStatus, setFilterStatus] = useState('');
@@ -54,11 +57,22 @@ export default function PayrollPage() {
     const fetchPayslips = async () => {
         setLoading(true);
         try {
-            let url = canSeeAll
-                ? `${API}/payroll/all?${filterMonth ? `month=${filterMonth}&` : ''}year=${filterYear}${filterStatus ? `&status=${filterStatus}` : ''}`
-                : `${API}/payroll/my`;
-            const res = await axios.get(url, { headers });
-            setPayslips(Array.isArray(res.data) ? res.data : []);
+            if (canSeeAll) {
+                const url = `${API}/payroll/all?${filterMonth ? `month=${filterMonth}&` : ''}year=${filterYear}${filterStatus ? `&status=${filterStatus}` : ''}`;
+                const res = await axios.get(url, { headers });
+                setPayslips(Array.isArray(res.data) ? res.data : []);
+            }
+            // Fetch personal data for both employees and admins alike
+            const [salRes, payRes] = await Promise.all([
+                axios.get(`${API}/salary/my`, { headers }).catch(() => ({ data: null })),
+                axios.get(`${API}/payroll/my`, { headers }).catch(() => ({ data: [] }))
+            ]);
+            setMySalary(salRes.data);
+            setMyPayslips(Array.isArray(payRes.data) ? payRes.data : []);
+            
+            if (!canSeeAll) {
+                setPayslips(Array.isArray(payRes.data) ? payRes.data : []); // keep payslips alias for backwards compat
+            }
         } catch (e) {
             console.error(e);
         } finally { setLoading(false); }
@@ -176,7 +190,8 @@ export default function PayrollPage() {
         win.print();
     };
 
-    const filtered = payslips.filter(r => {
+    const baseSource = activeTab === 'my_payslips' ? myPayslips : payslips;
+    const filtered = baseSource.filter(r => {
         const name = `${r.Employee?.firstName || ''} ${r.Employee?.lastName || ''}`.toLowerCase();
         const eid  = (r.Employee?.employeeId || '').toLowerCase();
         return !search || name.includes(search.toLowerCase()) || eid.includes(search.toLowerCase());
@@ -190,7 +205,7 @@ export default function PayrollPage() {
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             {/* Page Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex flex-col flex-wrap sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-[var(--text-primary)]">Payroll & Compliance</h1>
                     <p className="text-[var(--text-secondary)] mt-1 text-sm">
@@ -211,7 +226,25 @@ export default function PayrollPage() {
                 </div>
             </div>
 
-            {/* Summary Cards */}
+            {/* Tab Navigation */}
+            <div className="flex border-b border-[var(--border-color)] overflow-x-auto custom-scrollbar">
+                {canSeeAll && (
+                    <button onClick={() => setActiveTab('organization')} className={`px-6 py-4 text-sm font-semibold transition-all whitespace-nowrap ${activeTab === 'organization' ? 'text-blue-500 border-b-2 border-blue-500 bg-blue-500/5' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'}`}>
+                        Organization Payroll
+                    </button>
+                )}
+                <button onClick={() => setActiveTab('my_payslips')} className={`px-6 py-4 text-sm font-semibold transition-all whitespace-nowrap ${activeTab === 'my_payslips' ? 'text-blue-500 border-b-2 border-blue-500 bg-blue-500/5' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'}`}>
+                    My Payslips
+                </button>
+                <button onClick={() => setActiveTab('my_salary')} className={`px-6 py-4 text-sm font-semibold transition-all whitespace-nowrap ${activeTab === 'my_salary' ? 'text-blue-500 border-b-2 border-blue-500 bg-blue-500/5' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'}`}>
+                    My Salary Structure
+                </button>
+            </div>
+
+            {/* Content Switcher */}
+            {activeTab !== 'my_salary' ? (
+                <>
+                    {/* Summary Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
                     { label: 'Total Gross', value: fmt(totalGross), icon: TrendingUp, color: 'text-blue-500', bg: 'bg-blue-500/10' },
@@ -234,7 +267,7 @@ export default function PayrollPage() {
             </div>
 
             {/* Approval Stage Legend */}
-            {canSeeAll && (
+            {activeTab === 'organization' && (
                 <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
                     <span className="text-[var(--text-secondary)] uppercase tracking-wider">Workflow:</span>
                     {['Draft','Verified','Approved','Paid'].map((s, i, arr) => (
@@ -247,7 +280,7 @@ export default function PayrollPage() {
             )}
 
             {/* Filters */}
-            {canSeeAll && (
+            {activeTab === 'organization' && (
                 <div className="flex flex-wrap gap-3 bg-[var(--card-bg)] border border-[var(--border-color)] p-4 rounded-2xl">
                     <div className="relative flex-1 min-w-[160px]">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-secondary)]" />
@@ -283,12 +316,12 @@ export default function PayrollPage() {
                     <table className="w-full text-left border-collapse min-w-[900px]">
                         <thead>
                             <tr className="bg-[var(--bg-secondary)]/30 text-[var(--text-secondary)] text-[10px] uppercase tracking-widest">
-                                <th className="px-6 py-4">{canSeeAll ? 'Employee' : 'Period'}</th>
+                                <th className="px-6 py-4">{activeTab === 'organization' ? 'Employee' : 'Period'}</th>
                                 <th className="px-6 py-4">Gross</th>
                                 <th className="px-6 py-4">Deductions</th>
                                 <th className="px-6 py-4">Net Pay</th>
                                 <th className="px-6 py-4">Status</th>
-                                {canSeeAll && <th className="px-6 py-4">Actions</th>}
+                                {activeTab === 'organization' && <th className="px-6 py-4">Actions</th>}
                                 <th className="px-6 py-4 text-right">Download</th>
                             </tr>
                         </thead>
@@ -303,7 +336,7 @@ export default function PayrollPage() {
                             ) : filtered.map(rec => (
                                 <tr key={rec.id} className="hover:bg-[var(--hover-bg)] transition-colors">
                                     <td className="px-6 py-4">
-                                        {canSeeAll ? (
+                                        {activeTab === 'organization' ? (
                                             <div>
                                                 <Link to={`/employees/${rec.Employee?.id}`} className="text-sm font-bold text-[var(--text-primary)] hover:text-blue-500 hover:underline transition-colors w-fit block">
                                                     {rec.Employee?.firstName} {rec.Employee?.lastName}
@@ -323,7 +356,7 @@ export default function PayrollPage() {
                                             {rec.status}
                                         </span>
                                     </td>
-                                    {canSeeAll && (
+                                    {activeTab === 'organization' && (
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
                                                 {/* View Breakdown */}
@@ -367,6 +400,93 @@ export default function PayrollPage() {
                     </table>
                 </div>
             </div>
+            </>
+            ) : (() => {
+                const parseJSON = (v) => {
+                    if (!v) return {};
+                    if (typeof v === 'object') return v;
+                    try { return JSON.parse(v); } catch { return {}; }
+                };
+                const allowances = parseJSON(mySalary?.allowances);
+                const deductions = parseJSON(mySalary?.deductions);
+                const allowTotal = Object.values(allowances).reduce((s, v) => s + (parseFloat(v) || 0), 0);
+                const deductTotal = Object.values(deductions).reduce((s, v) => s + (parseFloat(v) || 0), 0);
+                const grossSalary = (parseFloat(mySalary?.baseSalary) || 0) + allowTotal;
+                const netSalary = Math.max(0, grossSalary - deductTotal);
+
+                return (
+                    <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-3xl p-6 md:p-10 shadow-xl w-full mx-auto">
+                        {!mySalary ? (
+                            <div className="flex flex-col items-center justify-center h-64 text-center">
+                                <DollarSign className="w-16 h-16 text-slate-400/30 mb-4" />
+                                <p className="text-lg font-bold text-[var(--text-primary)]">No Salary Structure Set</p>
+                                <p className="text-sm text-[var(--text-secondary)] mt-1">HR has not configured your compensation details yet.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-6 max-w-5xl mx-auto">
+                                <h3 className="text-lg font-bold text-[var(--text-primary)] border-b border-[var(--border-color)] pb-3">My Compensation Structure</h3>
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                    <div className="col-span-2 md:col-span-5 p-6 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl text-white shadow-lg mx-auto w-full text-center">
+                                        <p className="text-xs font-bold uppercase tracking-wider opacity-75">Configured Gross Salary</p>
+                                        <p className="text-4xl font-extrabold mt-2">{fmt(grossSalary)}</p>
+                                        <p className="text-xs opacity-80 mt-2">{mySalary.payType} · {mySalary.currency}</p>
+                                    </div>
+                                    <div className="col-span-1 p-5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-center">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Base Pay</p>
+                                        <p className="text-lg font-extrabold text-emerald-500 mt-1">{fmt(mySalary.baseSalary)}</p>
+                                    </div>
+                                    <div className="col-span-1 p-5 bg-green-500/10 border border-green-500/20 rounded-2xl text-center">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-green-600 dark:text-green-400">Allowances</p>
+                                        <p className="text-lg font-extrabold text-green-500 mt-1">+{fmt(allowTotal)}</p>
+                                    </div>
+                                    <div className="col-span-1 md:col-span-2 p-5 bg-red-500/10 border border-red-500/20 rounded-2xl text-center">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-red-500">Deductions</p>
+                                        <p className="text-lg font-extrabold text-red-500 mt-1">-{fmt(deductTotal)}</p>
+                                    </div>
+                                    <div className="col-span-2 md:col-span-1 p-5 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl text-center">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">Est. Net Pay</p>
+                                        <p className="text-lg font-extrabold text-[var(--text-primary)] mt-1">{fmt(netSalary)}</p>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                                    {Object.keys(allowances).length > 0 && (
+                                        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5">
+                                            <div className="px-5 py-4 border-b border-emerald-500/20 flex items-center gap-2">
+                                                <TrendingUp className="w-5 h-5 text-emerald-500" />
+                                                <p className="text-sm font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Allowances</p>
+                                            </div>
+                                            <div className="p-5 space-y-3">
+                                                {Object.entries(allowances).map(([k, v]) => (
+                                                    <div key={k} className="flex justify-between items-center bg-[var(--bg-secondary)] px-4 py-2.5 rounded-xl border border-[var(--border-color)]">
+                                                        <span className="text-sm font-semibold text-[var(--text-primary)]">{k}</span>
+                                                        <span className="font-bold text-emerald-500">+{fmt(v)}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {Object.keys(deductions).length > 0 && (
+                                        <div className="rounded-2xl border border-red-500/20 bg-red-500/5">
+                                            <div className="px-5 py-4 border-b border-red-500/20 flex items-center gap-2">
+                                                <TrendingDown className="w-5 h-5 text-red-500" />
+                                                <p className="text-sm font-black text-red-500 uppercase tracking-wider">Deductions</p>
+                                            </div>
+                                            <div className="p-5 space-y-3">
+                                                {Object.entries(deductions).map(([k, v]) => (
+                                                    <div key={k} className="flex justify-between items-center bg-[var(--bg-secondary)] px-4 py-2.5 rounded-xl border border-[var(--border-color)]">
+                                                        <span className="text-sm font-semibold text-[var(--text-primary)]">{k}</span>
+                                                        <span className="font-bold text-red-500">-{fmt(v)}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            })()}
 
             {/* Generate Modal */}
             <Modal isOpen={genModal} onClose={() => setGenModal(false)} title="Generate Monthly Payroll Draft">

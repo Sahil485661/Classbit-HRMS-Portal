@@ -57,6 +57,17 @@ const LeaveManagement = () => {
             return alert("Ending date cannot be before the starting date.");
         }
 
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const startDateObj = new Date(formData.startDate);
+        startDateObj.setHours(0, 0, 0, 0);
+        
+        const diffDays = (startDateObj - today) / (1000 * 60 * 60 * 24);
+        
+        if (diffDays < 2) {
+            return alert("You must apply for leave at least 2 days in advance. Please contact HR or your manager for urgent leave requests.");
+        }
+
         const appliedDays = calculateDays(formData.startDate, formData.endDate);
         const typeId = Number(formData.leaveTypeId);
 

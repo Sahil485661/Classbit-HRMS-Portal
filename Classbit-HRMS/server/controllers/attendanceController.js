@@ -199,7 +199,47 @@ const getAllAttendance = async (req, res) => {
             include,
             order: [['date', 'DESC'], [AttendanceActivity, 'startTime', 'ASC']]
         });
-        res.json(attendance);
+
+        // Inject Virtual Absent Records for requested date or today
+        const targetDate = date || new Date().toLocaleDateString('en-CA');
+        
+        // Find all active employees (filtered by department if provided)
+        const empWhere = { status: 'Active' };
+        if (departmentId) empWhere.departmentId = departmentId;
+        const activeEmployees = await Employee.findAll({
+            where: empWhere,
+            include: [Department]
+        });
+
+        // Extract IDs of employees who ALREADY have a record on targetDate
+        const presentIds = new Set(
+            attendance.filter(a => a.date === targetDate).map(a => a.employeeId)
+        );
+
+        // Generate virtual missing records
+        const absentRecords = [];
+        activeEmployees.forEach(emp => {
+            if (!presentIds.has(emp.id)) {
+                absentRecords.push({
+                    id: `virtual-absent-${emp.id}-${targetDate}`,
+                    employeeId: emp.id,
+                    date: targetDate,
+                    checkIn: null,
+                    checkOut: null,
+                    workingHours: 0,
+                    overtime: 0,
+                    status: 'Absent',
+                    currentStatus: 'Absent',
+                    Employee: emp,
+                    AttendanceActivities: []
+                });
+            }
+        });
+
+        // Combine and re-sort descending by date
+        const combined = [...attendance, ...absentRecords].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        res.json(combined);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

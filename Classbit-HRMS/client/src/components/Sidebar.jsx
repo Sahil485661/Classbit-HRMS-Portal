@@ -8,6 +8,7 @@ import {
     AlertCircle, TrendingUp, UserPlus, History, Receipt,
     ChevronDown, ChevronRight
 } from 'lucide-react';
+import ThemeToggle from './ThemeToggle';
 
 const Sidebar = () => {
     const { user } = useSelector((state) => state.auth);
@@ -23,6 +24,7 @@ const Sidebar = () => {
 
     const menuItems = [
         { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Dashboard' },
+        { name: 'Calendar', icon: Calendar, path: '/calendar', roles: ['Super Admin', 'HR', 'Manager', 'Employee'] },
         { name: 'Employees', icon: Users, path: '/employees', roles: ['Super Admin', 'HR', 'Manager'], permissionKey: 'Employees' },
         { 
             name: 'Attendance', 
@@ -38,7 +40,7 @@ const Sidebar = () => {
         { name: 'Work', icon: Briefcase, path: '/work', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Tasks' },
         { name: 'Payroll', icon: CreditCard, path: '/payroll', roles: ['Super Admin', 'HR', 'Employee'], permissionKey: 'Payroll' },
         { name: 'Reimbursements', icon: Receipt, path: '/reimbursements', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Reimbursements' },
-        { name: 'Loan', icon: Wallet, path: '/loan', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Loans' },
+        { name: 'Loan', icon: Wallet, path: '/loan', disabled: role !== 'Super Admin', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Loans' },
         { name: 'Grievance', icon: AlertCircle, path: '/grievance', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Grievances' },
         { name: 'Accounting', icon: BarChart3, path: '/accounting', roles: ['Super Admin'] },
         { name: 'Messages', icon: MessageSquare, path: '/messages', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Messages' },
@@ -113,10 +115,16 @@ const Sidebar = () => {
                     return (
                         <NavLink
                             key={item.name}
-                            to={item.path}
+                            to={item.disabled ? '#' : item.path}
+                            onClick={(e) => {
+                                if (item.disabled) {
+                                    e.preventDefault();
+                                    alert('This feature is temporarily disabled for your role.');
+                                }
+                            }}
                             className={({ isActive }) => `
                                 flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all
-                                ${isActive
+                                ${item.disabled ? 'opacity-50 cursor-not-allowed text-[var(--text-secondary)]' : isActive
                                     ? 'bg-[var(--sidebar-bg)] shadow-[inset_4px_0_0_0_#3b82f6] text-[var(--text-primary)] bg-black/5 dark:bg-white/5'
                                     : 'text-[var(--text-primary)] hover:bg-[var(--hover-bg)]'
                                 }
@@ -129,12 +137,7 @@ const Sidebar = () => {
                 })}
             </nav>
 
-            <div className="p-4 border-t border-[var(--border-color)]">
-                <div className="bg-[var(--bg-secondary)] p-4 rounded-xl border border-[var(--border-color)]">
-                    <p className="text-xs text-[var(--text-muted)] uppercase font-semibold">User Role</p>
-                    <p className="text-sm text-[var(--text-secondary)] mt-1">{role}</p>
-                </div>
-            </div>
+            <ThemeToggle />
         </aside>
     );
 };

@@ -4,8 +4,8 @@ import { Provider, useSelector } from 'react-redux';
 import { store } from './store';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
-import ThemeToggle from './components/ThemeToggle';
 import Login from './pages/Login';
+import CalendarPage from './pages/calendar/CalendarPage';
 import ForceChangePassword from './pages/ForceChangePassword';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
@@ -89,7 +89,6 @@ const AppLayout = ({ children }) => {
 
   return (
     <div className="flex h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-hidden transition-colors duration-300">
-      <ThemeToggle />
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Navbar />
@@ -116,6 +115,12 @@ function App() {
           <Route path="/dashboard" element={
             <PrivateRoute>
               <AppLayout><Dashboard /></AppLayout>
+            </PrivateRoute>
+          } />
+
+          <Route path="/calendar" element={
+            <PrivateRoute>
+              <AppLayout><CalendarPage /></AppLayout>
             </PrivateRoute>
           } />
 
