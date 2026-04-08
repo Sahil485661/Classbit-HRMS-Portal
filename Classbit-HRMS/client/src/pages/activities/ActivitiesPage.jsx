@@ -28,19 +28,7 @@ const ActivitiesPage = () => {
         fetchLogs();
     }, []);
 
-    const handlePurgeLogs = async () => {
-        if (!window.confirm('WARNING: You are about to permanently delete all activity logs from the database. This action cannot be undone. Proceed?')) return;
-        
-        try {
-            const token = localStorage.getItem('token');
-            await axios.delete('http://localhost:5000/api/activities/purge', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            fetchLogs();
-        } catch (error) {
-            alert('Failed to purge logs: ' + (error.response?.data?.message || error.message));
-        }
-    };
+
 
     const getActionColor = (action) => {
         if (action.includes('CREATE') || action.includes('ADD')) return 'text-emerald-400';
@@ -101,15 +89,7 @@ const ActivitiesPage = () => {
                     </div>
                     <div className="flex items-center gap-4">
                         <button onClick={fetchLogs} className="text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors">Force Refresh</button>
-                        {user?.role === 'Super Admin' && (
-                            <button 
-                                onClick={handlePurgeLogs} 
-                                className="text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 px-4 py-2 rounded-xl shadow-lg shadow-rose-500/20 transition-all flex items-center gap-2"
-                            >
-                                <AlertTriangle className="w-3 h-3" />
-                                Clear All Logs
-                            </button>
-                        )}
+
                     </div>
                 </div>
 

@@ -269,6 +269,19 @@ const adminForcePasswordReset = async (req, res) => {
             return res.status(403).json({ message: 'Only Super Admin can force password resets.' });
         }
         
+        const { adminPassword } = req.body;
+        if (!adminPassword) {
+            return res.status(400).json({ message: 'Admin password is required to confirm this action.' });
+        }
+
+        const adminUser = await User.findByPk(req.user.id);
+        if (!adminUser) return res.status(401).json({ message: 'Unauthorized' });
+
+        const isMatch = await adminUser.comparePassword(adminPassword);
+        if (!isMatch) {
+            return res.status(403).json({ message: 'Incorrect Admin password. Action denied.' });
+        }
+
         const { id } = req.params;
         const employee = await Employee.findByPk(id, { include: [User] });
         if (!employee || !employee.User) return res.status(404).json({ message: 'Employee not found' });

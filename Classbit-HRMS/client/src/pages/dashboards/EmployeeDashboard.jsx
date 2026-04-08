@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import EventCalendar from '../../components/EventCalendar';
+import NoticeboardWidget from '../../components/NoticeboardWidget';
 import { useSelector } from 'react-redux';
 import {
     Clock, Briefcase, MessageSquare,
@@ -228,9 +229,9 @@ const EmployeeDashboard = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Work List */}
-                <div className="space-y-6">
+                <div className="lg:col-span-2 space-y-6">
                     <div className="flex items-center justify-between">
                         <h3 className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
                             <Briefcase className="w-5 h-5 text-blue-400" />
@@ -289,6 +290,12 @@ const EmployeeDashboard = () => {
                     </div>
                 </div>
 
+                <div className="lg:col-span-1">
+                    <NoticeboardWidget />
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-8">
                 {/* Event Calendar - Full Width Below */}
                 <div className="pt-2">
                     <EventCalendar permittedDesignations={permittedDesignations} viewMode="week" />

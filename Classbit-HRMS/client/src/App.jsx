@@ -20,6 +20,7 @@ import TaskDetailsPage from './pages/work/TaskDetailsPage';
 import PayrollPage from './pages/payroll/PayrollPage';
 import LeaveManagement from './pages/leave/LeaveManagement';
 import SettingsPage from './pages/setup/SettingsPage';
+import NoticeManagement from './pages/setup/NoticeManagement';
 import LoanPage from './pages/loan/LoanPage';
 import GrievancePage from './pages/grievance/GrievancePage';
 import MessagesPage from './pages/messages/MessagesPage';
@@ -121,6 +122,12 @@ function App() {
           <Route path="/calendar" element={
             <PrivateRoute>
               <AppLayout><CalendarPage /></AppLayout>
+            </PrivateRoute>
+          } />
+
+          <Route path="/notices" element={
+            <PrivateRoute>
+              <AppLayout><NoticeManagement /></AppLayout>
             </PrivateRoute>
           } />
 

@@ -10,11 +10,17 @@ const LeaveManagement = () => {
     const [leaves, setLeaves] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+    const [isCompanyLeaveModalOpen, setIsCompanyLeaveModalOpen] = useState(false);
     const [formData, setFormData] = useState({
         startDate: '',
         endDate: '',
         reason: '',
         leaveTypeId: 1 // Default to 1 (Annual) for now
+    });
+    const [companyLeaveData, setCompanyLeaveData] = useState({
+        eventDate: '',
+        title: '',
+        content: ''
     });
 
     const fetchLeaves = async () => {
@@ -102,6 +108,27 @@ const LeaveManagement = () => {
         }
     };
 
+    const handleDeclareCompanyLeave = async (e) => {
+        e.preventDefault();
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post('http://localhost:5000/api/notices', {
+                type: 'Notice',
+                title: `Company Leave: ${companyLeaveData.title}`,
+                content: companyLeaveData.content,
+                eventDate: companyLeaveData.eventDate,
+                isActive: true
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setIsCompanyLeaveModalOpen(false);
+            setCompanyLeaveData({ eventDate: '', title: '', content: '' });
+            alert("Company leave declared. It will appear with a red border on all user calendars.");
+        } catch (error) {
+            alert('Failed to declare company leave');
+        }
+    };
+
     const handleUpdateStatus = async (id, status) => {
         try {
             const token = localStorage.getItem('token');
@@ -158,13 +185,24 @@ const LeaveManagement = () => {
                     <h1 className="text-2xl font-bold text-[var(--text-primary)]">Leave Management</h1>
                     <p className="text-[var(--text-secondary)] mt-1">Apply for leave and track your attendance status.</p>
                 </div>
-                <button
-                    onClick={() => setIsApplyModalOpen(true)}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-semibold transition-all"
-                >
-                    <Plus className="w-5 h-5" />
-                    Apply for Leave
-                </button>
+                <div className="flex gap-3">
+                    {user.role !== 'Employee' && (
+                        <button
+                            onClick={() => setIsCompanyLeaveModalOpen(true)}
+                            className="flex items-center gap-2 bg-red-600/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-sm"
+                        >
+                            <AlertCircle className="w-5 h-5" />
+                            Declare Company Leave
+                        </button>
+                    )}
+                    <button
+                        onClick={() => setIsApplyModalOpen(true)}
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-blue-900/20"
+                    >
+                        <Plus className="w-5 h-5" />
+                        Apply for Leave
+                    </button>
+                </div>
             </div>
 
             {/* Stats */}
@@ -348,6 +386,49 @@ const LeaveManagement = () => {
                         <button type="button" onClick={() => setIsApplyModalOpen(false)} className="px-6 py-2.5 text-[var(--text-secondary)] font-semibold">Cancel</button>
                         <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-2.5 rounded-xl font-bold transition-all">
                             Submit Application
+                        </button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* Company Leave Modal */}
+            <Modal isOpen={isCompanyLeaveModalOpen} onClose={() => setIsCompanyLeaveModalOpen(false)} title="Declare Company Leave">
+                <form onSubmit={handleDeclareCompanyLeave} className="space-y-4">
+                    <div>
+                        <label className="text-xs font-bold text-[var(--text-secondary)] uppercase block mb-2">Leave Date</label>
+                        <input
+                            type="date"
+                            required
+                            className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none"
+                            value={companyLeaveData.eventDate}
+                            onChange={(e) => setCompanyLeaveData({ ...companyLeaveData, eventDate: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-[var(--text-secondary)] uppercase block mb-2">Occasion / Title</label>
+                        <input
+                            type="text"
+                            required
+                            className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none"
+                            placeholder="e.g. Diwali, Christmas, Public Holiday"
+                            value={companyLeaveData.title}
+                            onChange={(e) => setCompanyLeaveData({ ...companyLeaveData, title: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-[var(--text-secondary)] uppercase block mb-2">Details (Optional)</label>
+                        <textarea
+                            rows="3"
+                            className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none"
+                            placeholder="Any additional instructions or description."
+                            value={companyLeaveData.content}
+                            onChange={(e) => setCompanyLeaveData({ ...companyLeaveData, content: e.target.value })}
+                        ></textarea>
+                    </div>
+                    <div className="flex justify-end gap-3 pt-4">
+                        <button type="button" onClick={() => setIsCompanyLeaveModalOpen(false)} className="px-6 py-2.5 text-[var(--text-secondary)] font-semibold">Cancel</button>
+                        <button type="submit" className="bg-red-600 hover:bg-red-500 text-white px-8 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-red-900/20">
+                            Declare Leave
                         </button>
                     </div>
                 </form>

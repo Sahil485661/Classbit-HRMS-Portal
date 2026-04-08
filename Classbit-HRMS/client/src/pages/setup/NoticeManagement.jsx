@@ -5,6 +5,7 @@ import {
     Type, AlignLeft, AlertCircle, Quote as QuoteIcon,
     Megaphone, CheckCircle2, X, Edit
 } from 'lucide-react';
+import { useSelector } from 'react-redux';
 
 const NoticeManagement = () => {
     const [notices, setNotices] = useState([]);
@@ -22,19 +23,17 @@ const NoticeManagement = () => {
         eventDate: '',
         isActive: true
     });
+    
+    // Determine if the user is authorized to create/edit notices
+    const { user } = useSelector((state) => state.auth);
+    const canManageNotices = user?.role === 'Super Admin' || user?.role === 'HR' || user?.role === 'Manager';
 
     const fetchNotices = async () => {
         try {
             const token = localStorage.getItem('token');
             const headers = { Authorization: `Bearer ${token}` };
-            const [noticesRes, settingsRes] = await Promise.all([
-                axios.get('http://localhost:5000/api/notices', { headers }),
-                axios.get('http://localhost:5000/api/setup', { headers }).catch(() => ({ data: [] }))
-            ]);
+            const noticesRes = await axios.get('http://localhost:5000/api/notices', { headers });
             setNotices(noticesRes.data);
-            
-            const adminDesigs = settingsRes.data.find(s => s.key === 'eventAdminDesignations')?.value || '';
-            setSettings({ eventAdminDesignations: adminDesigs });
         } catch (error) {
             console.error('Error fetching notices:', error);
         } finally {
@@ -118,56 +117,26 @@ const NoticeManagement = () => {
 
     return (
         <div className="space-y-6">
-            <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-6 rounded-3xl shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div>
-                    <h3 className="text-sm font-bold text-[var(--text-primary)]">Event Calendar Permissions</h3>
-                    <p className="text-[10px] text-[var(--text-secondary)] mt-1 max-w-lg">Define which employee Designations (comma-separated, e.g. "Supervisor, Team Lead") are globally permitted to edit Event Calendars on their dashboard.</p>
-                </div>
-                <div className="flex gap-2 w-full md:w-auto">
-                    <input 
-                        type="text"
-                        placeholder="e.g. Manager, HR Admin"
-                        className="w-full md:w-64 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                        value={settings.eventAdminDesignations}
-                        onChange={(e) => setSettings({ eventAdminDesignations: e.target.value })}
-                    />
-                    <button 
-                        onClick={async () => {
-                            setSavingSettings(true);
-                            try {
-                                const token = localStorage.getItem('token');
-                                await axios.post('http://localhost:5000/api/setup', 
-                                    { settings: [{ key: 'eventAdminDesignations', value: settings.eventAdminDesignations }] },
-                                    { headers: { Authorization: `Bearer ${token}` }}
-                                );
-                            } catch(e) { alert('Failed to save permissions'); }
-                            setSavingSettings(false);
-                        }}
-                        disabled={savingSettings}
-                        className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-md shrink-0"
-                    >
-                        {savingSettings ? 'Saving...' : 'Save Rule'}
-                    </button>
-                </div>
-            </div>
 
-            <div className="flex justify-between items-center text-left pt-6">
+            <div className="flex justify-between items-center text-left pt-2">
                 <div>
-                    <h2 className="text-xl font-bold text-[var(--text-primary)] italic">Internal Notifications & Notices</h2>
-                    <p className="text-sm text-[var(--text-secondary)] mt-1">Broadcast announcements, daily quotes, and pinpoint events to all employees.</p>
+                    <h2 className="text-2xl font-bold text-[var(--text-primary)] italic">Global Notice Board</h2>
+                    <p className="text-sm text-[var(--text-secondary)] mt-1">Stay updated with company announcements, daily quotes, and pinpoint events.</p>
                 </div>
-                <button
-                    onClick={() => {
-                        setIsEditing(false);
-                        setEditingId(null);
-                        setFormData({ type: 'Announcement', title: '', content: '', expiryDate: '', eventDate: '', isActive: true });
-                        setShowModal(true);
-                    }}
-                    className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-2xl flex items-center gap-2 font-bold transition-all shadow-lg shadow-blue-900/20"
-                >
-                    <Plus className="w-4 h-4" />
-                    Create Notice
-                </button>
+                {canManageNotices && (
+                    <button
+                        onClick={() => {
+                            setIsEditing(false);
+                            setEditingId(null);
+                            setFormData({ type: 'Announcement', title: '', content: '', expiryDate: '', eventDate: '', isActive: true });
+                            setShowModal(true);
+                        }}
+                        className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-2xl flex items-center gap-2 font-bold transition-all shadow-lg shadow-blue-900/20"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Create Notice
+                    </button>
+                )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -193,12 +162,16 @@ const NoticeManagement = () => {
                                         </div>
                                     </div>
                                     <div className="flex gap-2">
-                                        <button onClick={() => openEditModal(notice)} className="text-slate-600 hover:text-blue-500 transition-colors p-2" title="Edit Notice">
-                                            <Edit className="w-4 h-4" />
-                                        </button>
-                                        <button onClick={() => handleDelete(notice.id)} className="text-slate-600 hover:text-red-500 transition-colors p-2" title="Delete Notice">
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                        {canManageNotices && (
+                                            <>
+                                                <button onClick={() => openEditModal(notice)} className="text-slate-600 hover:text-blue-500 transition-colors p-2" title="Edit Notice">
+                                                    <Edit className="w-4 h-4" />
+                                                </button>
+                                                <button onClick={() => handleDelete(notice.id)} className="text-slate-600 hover:text-red-500 transition-colors p-2" title="Delete Notice">
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                                 <p className="text-sm text-[var(--text-secondary)] line-clamp-3 text-left leading-relaxed">{notice.content}</p>

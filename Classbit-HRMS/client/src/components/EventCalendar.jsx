@@ -36,32 +36,48 @@ const EventCalendar = ({ permittedDesignations, viewMode = 'month' }) => {
             const token = localStorage.getItem('token');
             const headers = { Authorization: `Bearer ${token}` };
             
-            // Fetch Notices, Tasks, and Attendance in parallel
-            const [noticesRes, tasksRes, attRes] = await Promise.allSettled([
+            const leaveUrl = user.role === 'Employee' ? 'http://localhost:5000/api/leave/my' : 'http://localhost:5000/api/leave/all';
+            
+            // Fetch Notices, Tasks, Attendance, and Leaves in parallel
+            const [noticesRes, tasksRes, attRes, leavesRes] = await Promise.allSettled([
                 axios.get('http://localhost:5000/api/notices', { headers }),
                 axios.get('http://localhost:5000/api/tasks/my', { headers }),
-                axios.get('http://localhost:5000/api/attendance/my', { headers })
+                axios.get('http://localhost:5000/api/attendance/my', { headers }),
+                axios.get(leaveUrl, { headers })
             ]);
 
             let unifiedEvents = [];
 
-            // 1. Process Notices
+            // 1. Process Notices (Only Announcements and Company Leaves, filter out standard text Notices)
             if (noticesRes.status === 'fulfilled' && Array.isArray(noticesRes.value.data)) {
-                unifiedEvents.push(...noticesRes.value.data.map(n => {
+                noticesRes.value.data.forEach(n => {
                     let category = 'HR Notices';
                     let color = 'Yellow'; // Default Reminders
-                    if (n.type === 'Announcement') { category = 'Company Events'; color = 'Blue'; } // Meetings/Announcements
-                    if (n.title?.toLowerCase().includes('holiday')) { category = 'Company Events'; color = 'Green'; }
+                    let isCompanyLeave = false;
+                    let showInCalendar = false;
+                    
+                    if (n.type === 'Announcement') { category = 'Company Events'; color = 'Blue'; showInCalendar = true; } 
+                    if (n.title?.toLowerCase().includes('holiday')) { category = 'Company Events'; color = 'Green'; showInCalendar = true; }
+                    
+                    if (n.title?.startsWith('Company Leave:')) {
+                        category = 'Company Leave';
+                        color = 'Red';
+                        isCompanyLeave = true;
+                        showInCalendar = true;
+                    }
+                    
+                    if (!showInCalendar) return;
 
-                    return {
+                    unifiedEvents.push({
                         id: `notice-${n.id}`, originalId: n.id,
                         source: 'Notice', category, color,
-                        title: n.title || 'Notice',
+                        title: isCompanyLeave ? n.title.replace('Company Leave: ', '') : (n.title || 'Notice'),
                         content: n.content,
                         dateObj: new Date(n.eventDate || n.createdAt),
+                        isCompanyLeave,
                         raw: n
-                    };
-                }));
+                    });
+                });
             }
 
             // 2. Process Tasks
@@ -84,8 +100,30 @@ const EventCalendar = ({ permittedDesignations, viewMode = 'month' }) => {
                     title: 'Shift Logged',
                     content: `Clocked in at ${new Date(a.checkIn).toLocaleTimeString()}`,
                     dateObj: new Date(a.date),
+                    isAttendance: true,
                     raw: a
                 })));
+            }
+            
+            // 4. Process Leaves (Approved Only)
+            if (leavesRes.status === 'fulfilled' && Array.isArray(leavesRes.value.data)) {
+                leavesRes.value.data.forEach(l => {
+                    if (l.status !== 'Approved') return;
+                    
+                    const start = new Date(l.startDate);
+                    const end = new Date(l.endDate);
+                    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                        unifiedEvents.push({
+                            id: `leave-${l.id}-${d.getTime()}`, originalId: l.id,
+                            source: 'Leave', category: 'Absence', color: 'Yellow',
+                            title: user.role !== 'Employee' ? `${l.Employee?.firstName || 'Emp'} on Leave` : 'On Leave',
+                            content: `Reason: ${l.reason}`,
+                            dateObj: new Date(d),
+                            isAbsence: true,
+                            raw: l
+                        });
+                    }
+                });
             }
 
             setAllEvents(unifiedEvents);
@@ -180,7 +218,8 @@ const EventCalendar = ({ permittedDesignations, viewMode = 'month' }) => {
 
     const openDay = (d) => {
         const dStr = d.toLocaleDateString();
-        const eventsToday = allEvents.filter(ev => ev.dateObj.toLocaleDateString() === dStr);
+        // Omit attendance from modal as the calendar cell background natively indicates attendance
+        const eventsToday = allEvents.filter(ev => ev.dateObj.toLocaleDateString() === dStr && !ev.isAttendance);
         setSelectedDateStr(dStr);
         setSelectedDayEvents(eventsToday);
         setFormData({ ...formData, eventDate: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` });
@@ -207,7 +246,7 @@ const EventCalendar = ({ permittedDesignations, viewMode = 'month' }) => {
     const today = new Date();
     today.setHours(0,0,0,0);
     const upcomingEvents = allEvents
-        .filter(ev => ev.dateObj >= today)
+        .filter(ev => ev.dateObj >= today && !ev.isAttendance)
         .sort((a,b) => a.dateObj - b.dateObj)
         .slice(0, 5);
 
@@ -223,10 +262,10 @@ const EventCalendar = ({ permittedDesignations, viewMode = 'month' }) => {
                         <div className="w-full">
                             <h3 className="text-base lg:text-lg font-bold text-[var(--text-primary)] tracking-wide">Dashboard Calendar</h3>
                             <div className="flex flex-wrap gap-2 lg:gap-3 text-[9px] lg:text-[10px] text-[var(--text-secondary)] uppercase tracking-widest font-bold mt-1">
-                                <span className="text-red-500 flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-500" /> Deadlines</span>
-                                <span className="text-blue-500 flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500" /> Meetings</span>
-                                <span className="text-green-500 flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-green-500" /> Holidays/Shifts</span>
-                                <span className="text-amber-500 flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-amber-500" /> Reminders</span>
+                                <span className="text-red-500 flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-500" /> Deadlines/Holidays</span>
+                                <span className="text-blue-500 flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500" /> Meetings/Events</span>
+                                <span className="text-green-500 flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-green-500" /> Shifts Logged</span>
+                                <span className="text-amber-500 flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-amber-500" /> Staff Leaves</span>
                             </div>
                         </div>
                     </div>
@@ -272,15 +311,24 @@ const EventCalendar = ({ permittedDesignations, viewMode = 'month' }) => {
                         })()).map((d) => {
                             const day = d.getDate();
                             const dStr = d.toLocaleDateString();
-                            const dailyEvents = allEvents.filter(n => n.dateObj.toLocaleDateString() === dStr);
+                            const allDayItems = allEvents.filter(n => n.dateObj.toLocaleDateString() === dStr);
+                            const dailyEvents = allDayItems.filter(n => !n.isAttendance);
+                            const hasAttended = allDayItems.some(n => n.isAttendance);
+                            const isCompanyLeave = allDayItems.some(n => n.isCompanyLeave);
                             const isToday = new Date().toLocaleDateString() === dStr;
                             
                             return (
                                 <button 
                                     key={dStr} 
                                     onClick={() => openDay(d)}
-                                    className={`min-h-[60px] lg:min-h-[100px] p-1.5 lg:p-2.5 border border-[var(--border-color)] rounded-xl flex flex-col items-start justify-start hover:border-blue-500/50 hover:shadow-lg transition-all overflow-hidden
-                                        ${isToday ? 'bg-blue-500/5 border-blue-500/40 ring-1 ring-blue-500 shadow-blue-500/10' : 'bg-[var(--card-bg)]'}
+                                    className={`min-h-[60px] lg:min-h-[100px] p-1.5 lg:p-2.5 border rounded-xl flex flex-col items-start justify-start hover:shadow-lg transition-all overflow-hidden
+                                        ${isToday 
+                                            ? 'bg-blue-500/5 border-blue-500/40 ring-1 ring-blue-500 shadow-blue-500/10' 
+                                            : isCompanyLeave
+                                                ? 'bg-red-500/5 border-red-500 ring-1 ring-red-500/20 hover:border-red-400'
+                                                : hasAttended 
+                                                    ? 'bg-emerald-500/5 border-emerald-500/40 hover:border-emerald-500' 
+                                                    : 'bg-[var(--card-bg)] border-[var(--border-color)] hover:border-blue-500/50'}
                                     `}
                                 >
                                     <div className="flex justify-between w-full items-center mb-0.5 lg:mb-1">
@@ -313,7 +361,7 @@ const EventCalendar = ({ permittedDesignations, viewMode = 'month' }) => {
                         <div className="p-2 lg:p-2.5 bg-purple-500/10 text-purple-500 rounded-xl">
                             <ArrowRight className="w-4 h-4 lg:w-5 lg:h-5" />
                         </div>
-                        <h3 className="text-md font-bold text-[var(--text-primary)]">Upcoming Agenda</h3>
+                        <h3 className="text-md font-bold text-[var(--text-primary)]">Upcoming Activity</h3>
                     </div>
                     
                     <div className="flex-1 space-y-4">

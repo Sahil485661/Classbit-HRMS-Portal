@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { sendMessage, getInbox, getOutbox, getConversation, markAsRead } = require('../controllers/messageController');
+const { sendMessage, getInbox, getOutbox, getConversation, getDepartmentConversation, getChatGroups, createChatGroup, getGroupConversation, markAsRead } = require('../controllers/messageController');
 const { protect } = require('../middleware/authMiddleware');
 
 // Ensure uploads/messages directory exists before multer tries to write to it
@@ -45,6 +45,10 @@ router.use(protect);
 router.post('/', upload.single('attachment'), sendMessage);
 router.get('/inbox', getInbox);
 router.get('/outbox', getOutbox);
+router.get('/groups', getChatGroups);
+router.post('/groups', createChatGroup);
+router.get('/groups/:groupId', getGroupConversation);
+router.get('/department/:departmentId', getDepartmentConversation);
 router.get('/:recipientId', getConversation);
 router.patch('/:id/read', markAsRead);
 

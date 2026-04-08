@@ -10,8 +10,12 @@ const AttendancePage = () => {
     const { user } = useSelector((state) => state.auth);
     const [attendance, setAttendance] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filters, setFilters] = useState({ date: '', departmentId: '', status: '' });
+    const [filters, setFilters] = useState({ 
+        date: '', month: '', year: new Date().getFullYear().toString(), 
+        departmentId: '', status: '', employeeId: '' 
+    });
     const [departments, setDepartments] = useState([]);
+    const [employeesList, setEmployeesList] = useState([]);
     const [showFilters, setShowFilters] = useState(false);
     const [isClocking, setIsClocking] = useState(false);
     const [showStatusMenu, setShowStatusMenu] = useState(false);
@@ -34,8 +38,17 @@ const AttendancePage = () => {
         fetchAttendance();
         if (user.role !== 'Employee') {
             fetchDepartments();
+            fetchEmployeesList();
         }
     }, [user.role, filters]);
+
+    const fetchEmployeesList = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.get('http://localhost:5000/api/employees', { headers: { Authorization: `Bearer ${token}` } });
+            setEmployeesList(Array.isArray(res.data) ? res.data : (res.data.employees || []));
+        } catch (error) { console.error('Error fetching employees:', error); }
+    };
 
     const fetchDepartments = async () => {
         try {
@@ -59,7 +72,10 @@ const AttendancePage = () => {
 
             const params = new URLSearchParams();
             if (filters.date) params.append('date', filters.date);
+            if (!filters.date && filters.month) params.append('month', filters.month);
+            if (!filters.date && filters.year) params.append('year', filters.year);
             if (filters.departmentId) params.append('departmentId', filters.departmentId);
+            if (filters.employeeId) params.append('employeeId', filters.employeeId);
 
             const res = await axios.get(`${url}?${params.toString()}`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -306,16 +322,44 @@ const AttendancePage = () => {
             {showFilters && (
                 <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-4 rounded-2xl shadow-lg animate-in slide-in-from-top-2 duration-300">
                     <div className="flex gap-4 flex-wrap items-end">
-                        <div className="space-y-1.5 flex-1 min-w-[200px] text-left">
-                            <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Date</label>
+                        
+                        {/* Month / Year Filters */}
+                        <div className="space-y-1.5 flex-1 min-w-[120px] text-left">
+                            <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Month</label>
+                            <select
+                                className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                value={filters.month}
+                                onChange={(e) => setFilters({ ...filters, month: e.target.value, date: '' })}
+                            >
+                                <option value="">All Months</option>
+                                {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
+                                    <option key={m} value={i + 1}>{m}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="space-y-1.5 flex-1 min-w-[120px] text-left">
+                            <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Year</label>
+                            <select
+                                className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                value={filters.year}
+                                onChange={(e) => setFilters({ ...filters, year: e.target.value, date: '' })}
+                            >
+                                {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+                            </select>
+                        </div>
+
+                        {/* Specific Date Filter (Overrides Month/Year implicitly) */}
+                        <div className="space-y-1.5 flex-1 min-w-[150px] text-left">
+                            <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Specific Date</label>
                             <input
                                 type="date"
                                 className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                                 value={filters.date}
-                                onChange={(e) => setFilters({ ...filters, date: e.target.value })}
+                                onChange={(e) => setFilters({ ...filters, date: e.target.value, month: '', year: '' })}
                             />
                         </div>
-                        <div className="space-y-1.5 flex-1 min-w-[200px] text-left">
+
+                        <div className="space-y-1.5 flex-1 min-w-[150px] text-left">
                             <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Status</label>
                             <select
                                 className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/50"
@@ -328,24 +372,40 @@ const AttendancePage = () => {
                                 <option value="Absent">Absent</option>
                             </select>
                         </div>
+                        
                         {user.role !== 'Employee' && (
-                            <div className="space-y-1.5 flex-1 min-w-[200px] text-left">
-                                <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Department</label>
-                                <select
-                                    className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                                    value={filters.departmentId}
-                                    onChange={(e) => setFilters({ ...filters, departmentId: e.target.value })}
-                                >
-                                    <option value="">All Departments</option>
-                                    {departments.map(d => (
-                                        <option key={d.id} value={d.id}>{d.name}</option>
-                                    ))}
-                                </select>
-                            </div>
+                            <>
+                                <div className="space-y-1.5 flex-1 min-w-[180px] text-left">
+                                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Department</label>
+                                    <select
+                                        className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                        value={filters.departmentId}
+                                        onChange={(e) => setFilters({ ...filters, departmentId: e.target.value })}
+                                    >
+                                        <option value="">All Departments</option>
+                                        {departments.map(d => (
+                                            <option key={d.id} value={d.id}>{d.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="space-y-1.5 flex-1 min-w-[180px] text-left">
+                                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Employee</label>
+                                    <select
+                                        className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                        value={filters.employeeId}
+                                        onChange={(e) => setFilters({ ...filters, employeeId: e.target.value })}
+                                    >
+                                        <option value="">All Employees</option>
+                                        {employeesList.map(e => (
+                                            <option key={e.id} value={e.id}>{e.firstName} {e.lastName} ({e.employeeId})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </>
                         )}
                         <button
-                            onClick={() => setFilters({ date: '', departmentId: '', status: '' })}
-                            className="h-[38px] px-4 text-xs font-bold text-red-400 hover:text-red-300 transition-colors uppercase"
+                            onClick={() => setFilters({ date: '', month: '', year: new Date().getFullYear().toString(), departmentId: '', status: '', employeeId: '' })}
+                            className="h-[38px] px-4 text-xs font-bold text-red-500 bg-red-500/10 rounded-xl hover:bg-red-500 hover:text-white transition-colors uppercase leading-none mb-1"
                         >
                             Reset
                         </button>

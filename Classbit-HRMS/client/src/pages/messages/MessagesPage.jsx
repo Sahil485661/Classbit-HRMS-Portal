@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
-import { Send, MessageSquare, Search, User, MoreVertical, Paperclip, XCircle, Users } from 'lucide-react';
+import { Send, MessageSquare, Search, User, MoreVertical, Paperclip, XCircle, Users, Plus, Hash } from 'lucide-react';
 
 const MessagesPage = () => {
     const { user } = useSelector((state) => state.auth);
@@ -13,8 +13,15 @@ const MessagesPage = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [departments, setDepartments] = useState([]);
+    const [groups, setGroups] = useState([]);
     const [unreadCounts, setUnreadCounts] = useState({});
-    const [searchQuery, setSearchQuery] = useState(''); // Added to avoid naming collisions just in case
+    const [searchQuery, setSearchQuery] = useState('');
+    
+    // Group Creation State
+    const [showGroupModal, setShowGroupModal] = useState(false);
+    const [groupName, setGroupName] = useState('');
+    const [selectedMembers, setSelectedMembers] = useState([]);
+
     const chatEndRef = useRef(null);
     const fileInputRef = useRef(null);
     const prevUnreadRef = useRef(null);
@@ -52,7 +59,8 @@ const MessagesPage = () => {
             const counts = {};
             res.data.forEach(msg => {
                 if (!msg.isRead) {
-                    counts[msg.senderId] = (counts[msg.senderId] || 0) + 1;
+                    const key = msg.groupId ? msg.groupId : msg.senderId;
+                    counts[key] = (counts[key] || 0) + 1;
                 }
             });
             
@@ -86,12 +94,14 @@ const MessagesPage = () => {
         const fetchChats = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const [empRes, deptRes] = await Promise.all([
+                const [empRes, deptRes, groupsRes] = await Promise.all([
                     axios.get('http://localhost:5000/api/employees', { headers: { Authorization: `Bearer ${token}` } }),
-                    axios.get('http://localhost:5000/api/employees/departments', { headers: { Authorization: `Bearer ${token}` } })
+                    axios.get('http://localhost:5000/api/employees/departments', { headers: { Authorization: `Bearer ${token}` } }),
+                    axios.get('http://localhost:5000/api/messages/groups', { headers: { Authorization: `Bearer ${token}` } })
                 ]);
                 setChats(empRes.data.filter(e => e.id !== user.employeeId));
                 setDepartments(deptRes.data);
+                setGroups(groupsRes.data);
             } catch (error) {
                 console.error('Error fetching chats:', error);
             } finally {
@@ -101,20 +111,24 @@ const MessagesPage = () => {
         fetchChats();
     }, [user.employeeId]);
 
-    const fetchMessages = async (recipientId) => {
-        if (!recipientId) return;
+    const fetchMessages = async (targetId, type = 'user') => {
+        if (!targetId) return;
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get(`http://localhost:5000/api/messages/${recipientId}`, {
+            let endpoint = `http://localhost:5000/api/messages/${targetId}`;
+            if (type === 'department') endpoint = `http://localhost:5000/api/messages/department/${targetId}`;
+            if (type === 'group') endpoint = `http://localhost:5000/api/messages/groups/${targetId}`;
+                
+            const res = await axios.get(endpoint, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            // Always update — the old length-equality guard caused messages to go stale/blank
             setMessages(res.data);
-            // Clear unread count locally when message thread is opened
-            const target = chats.find(c => c.id === recipientId);
-            if (target) {
+            
+            // Clear unread counts for the opened chat
+            const clearTargetId = type === 'user' ? (chats.find(c => c.id === targetId)?.userId) : targetId;
+            if (clearTargetId) {
                 setUnreadCounts(prev => {
-                    const newCounts = { ...prev, [target.userId]: 0 };
+                    const newCounts = { ...prev, [clearTargetId]: 0 };
                     prevUnreadRef.current = Object.values(newCounts).reduce((a, b) => a + b, 0);
                     return newCounts;
                 });
@@ -124,14 +138,38 @@ const MessagesPage = () => {
         }
     };
 
-    // Auto-refresh messages every 5 seconds when a direct chat is open
+    // Auto-refresh messages every 5 seconds
     useEffect(() => {
-        if (!activeChat || activeChat.isDepartment) return;
+        if (!activeChat) return;
         const interval = setInterval(() => {
-            fetchMessages(activeChat.id);
+            const type = activeChat.isDepartment ? 'department' : activeChat.isGroup ? 'group' : 'user';
+            fetchMessages(activeChat.id, type);
         }, 5000);
         return () => clearInterval(interval);
-    }, [activeChat?.id]); // Stable dep — don't include messages.length (causes interval thrash)
+    }, [activeChat?.id, activeChat?.isDepartment, activeChat?.isGroup]);
+
+    const handleCreateGroup = async (e) => {
+        e.preventDefault();
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.post('http://localhost:5000/api/messages/groups', 
+                { name: groupName, memberIds: selectedMembers },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setGroups(prev => [...prev, res.data]);
+            setShowGroupModal(false);
+            setGroupName('');
+            setSelectedMembers([]);
+            
+            // Switch to new group
+            setMessages([]);
+            setActiveChat({ isGroup: true, id: res.data.id, name: res.data.name });
+            fetchMessages(res.data.id, 'group');
+        } catch (err) {
+            console.error('Error creating group:', err);
+            alert('Failed to create group');
+        }
+    };
 
     const handleSend = async (e) => {
         e.preventDefault();
@@ -143,6 +181,8 @@ const MessagesPage = () => {
             
             if (activeChat.isDepartment) {
                 formData.append('departmentId', activeChat.id);
+            } else if (activeChat.isGroup) {
+                formData.append('groupId', activeChat.id);
             } else {
                 formData.append('recipientId', activeChat.id);
             }
@@ -160,7 +200,9 @@ const MessagesPage = () => {
             });
 
             if (activeChat.isDepartment) {
-                setMessages(prev => [...prev, { id: Date.now(), senderId: user.id, content: newMessage, createdAt: new Date().toISOString(), attachment: file ? file.name : null }]);
+                fetchMessages(activeChat.id, 'department');
+            } else if (activeChat.isGroup) {
+                fetchMessages(activeChat.id, 'group');
             } else {
                 setMessages(prev => [...prev, res.data]);
             }
@@ -208,6 +250,7 @@ const MessagesPage = () => {
                                             onClick={() => {
                                                 setMessages([]);
                                                 setActiveChat({ isDepartment: true, id: dept.id, name: dept.name });
+                                                fetchMessages(dept.id, 'department');
                                             }}
                                             className={`p-4 flex items-center gap-4 cursor-pointer transition-all border-l-4 ${activeChat?.isDepartment && activeChat?.id === dept.id ? 'bg-indigo-600/10 border-indigo-500' : 'border-transparent hover:bg-[var(--bg-secondary)]/50'}`}
                                         >
@@ -223,6 +266,44 @@ const MessagesPage = () => {
                                 </div>
                             )}
 
+                            {/* Chat Groups */}
+                            <div className="mb-4">
+                                <div className="px-6 py-2 border-b border-[var(--border-color)] flex justify-between items-center">
+                                    <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest">Chat Groups</h3>
+                                    <button onClick={() => setShowGroupModal(true)} className="p-1 hover:bg-[var(--text-secondary)]/20 rounded text-blue-500">
+                                        <Plus className="w-4 h-4" />
+                                    </button>
+                                </div>
+                                {groups.filter(g => g.name.toLowerCase().includes(searchTerm.toLowerCase())).map(group => (
+                                    <div
+                                        key={`grp-${group.id}`}
+                                        onClick={() => {
+                                            setMessages([]);
+                                            setActiveChat({ isGroup: true, id: group.id, name: group.name });
+                                            fetchMessages(group.id, 'group');
+                                        }}
+                                        className={`p-4 flex items-center gap-4 cursor-pointer transition-all border-l-4 ${activeChat?.isGroup && activeChat?.id === group.id ? 'bg-orange-600/10 border-orange-500' : 'border-transparent hover:bg-[var(--bg-secondary)]/50'}`}
+                                    >
+                                        <div className="w-12 h-12 bg-orange-500/10 rounded-2xl flex items-center justify-center text-orange-500 border border-orange-500/20 shadow-sm">
+                                            <Hash className="w-5 h-5" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex justify-between items-start">
+                                                <h4 className="font-bold text-[var(--text-primary)] text-sm truncate">{group.name}</h4>
+                                                {unreadCounts[group.id] > 0 && (
+                                                    <span className="bg-orange-500 text-[10px] text-white px-1.5 py-0.5 rounded-full font-bold">
+                                                        {unreadCounts[group.id]}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-[11px] text-[var(--text-secondary)] truncate">
+                                                {unreadCounts[group.id] > 0 ? "New message in group" : "Group Chat"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
                             {/* Direct Messages */}
                             <h3 className="px-6 py-2 text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest border-b border-[var(--border-color)]">Direct Messages</h3>
                             {chats.filter(chat =>
@@ -237,7 +318,7 @@ const MessagesPage = () => {
                             onClick={() => {
                                 setMessages([]); // Clear current messages for new chat
                                 setActiveChat(chat);
-                                fetchMessages(chat.id);
+                                fetchMessages(chat.id, 'user');
                             }}
                             className={`p-4 flex items-center gap-4 cursor-pointer transition-all border-l-4 ${activeChat?.id === chat.id ? 'bg-blue-600/10 border-blue-500' : 'border-transparent hover:bg-[var(--bg-secondary)]/50'}`}
                         >
@@ -273,13 +354,13 @@ const MessagesPage = () => {
                     {/* Header */}
                     <div className="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--bg-secondary)]/5">
                         <div className="flex items-center gap-4">
-                            <div className={`w-10 h-10 ${activeChat.isDepartment ? 'bg-indigo-600' : 'bg-blue-600'} rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/20`}>
-                                {activeChat.isDepartment ? <Users className="w-5 h-5"/> : `${activeChat.firstName?.[0]}${activeChat.lastName?.[0]}`}
+                            <div className={`w-10 h-10 ${activeChat.isDepartment ? 'bg-indigo-600' : activeChat.isGroup ? 'bg-orange-500' : 'bg-blue-600'} rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-black/10`}>
+                                {activeChat.isDepartment ? <Users className="w-5 h-5"/> : activeChat.isGroup ? <Hash className="w-5 h-5" /> : `${activeChat.firstName?.[0]}${activeChat.lastName?.[0]}`}
                             </div>
                             <div>
-                                <h3 className="font-bold text-[var(--text-primary)]">{activeChat.isDepartment ? `${activeChat.name} Department` : `${activeChat.firstName} ${activeChat.lastName}`}</h3>
-                                <p className={`text-[10px] ${activeChat.isDepartment ? 'text-indigo-500' : (activeChat.User?.lastLogin ? 'text-green-500' : 'text-[var(--text-secondary)]')} font-bold uppercase tracking-widest text-left`}>
-                                    {activeChat.isDepartment ? 'Broadcast Channel' : (activeChat.User?.lastLogin ? `Last Active: ${new Date(activeChat.User.lastLogin).toLocaleDateString()} ${new Date(activeChat.User.lastLogin).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Offline')}
+                                <h3 className="font-bold text-[var(--text-primary)]">{activeChat.isDepartment ? `${activeChat.name} Department` : activeChat.isGroup ? activeChat.name : `${activeChat.firstName} ${activeChat.lastName}`}</h3>
+                                <p className={`text-[10px] ${activeChat.isDepartment ? 'text-indigo-500' : activeChat.isGroup ? 'text-orange-500' : (activeChat.User?.lastLogin ? 'text-green-500' : 'text-[var(--text-secondary)]')} font-bold uppercase tracking-widest text-left`}>
+                                    {activeChat.isDepartment ? 'Broadcast Channel' : activeChat.isGroup ? 'Group Conversation' : (activeChat.User?.lastLogin ? `Last Active: ${new Date(activeChat.User.lastLogin).toLocaleDateString()} ${new Date(activeChat.User.lastLogin).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Offline')}
                                 </p>
                             </div>
                         </div>
@@ -299,6 +380,12 @@ const MessagesPage = () => {
                                         <Users className="w-20 h-20 mb-6 opacity-20 text-indigo-500" />
                                         <h3 className="text-xl font-bold opacity-50 text-[var(--text-primary)]">Department Broadcast</h3>
                                         <p className="text-sm mt-2 opacity-50">Messages sent here will be delivered individually to every employee inside the {activeChat.name} department.</p>
+                                    </>
+                                ) : activeChat.isGroup ? (
+                                    <>
+                                        <Hash className="w-20 h-20 mb-6 opacity-20 text-orange-500" />
+                                        <h3 className="text-xl font-bold opacity-50 text-[var(--text-primary)]">Group Chat</h3>
+                                        <p className="text-sm mt-2 opacity-50">Collaborate with your team right here.</p>
                                     </>
                                 ) : (
                                     <>
@@ -335,6 +422,11 @@ const MessagesPage = () => {
                                             ? 'bg-blue-600 text-white rounded-br-none'
                                             : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] rounded-bl-none'
                                             }`}>
+                                            {msg.senderId !== user.id && (activeChat.isDepartment || activeChat.isGroup) && (
+                                                <div className="text-[10px] font-bold opacity-60 mb-1 text-left text-orange-500">
+                                                    {msg.Sender?.Employee?.firstName || msg.Sender?.email || 'Unknown User'}
+                                                </div>
+                                            )}
                                             {msg.content && <p className="leading-relaxed text-left">{msg.content}</p>}
                                             {msg.attachment && (() => {
                                                 // Normalize path and build a clean URL
@@ -432,6 +524,45 @@ const MessagesPage = () => {
                     </div>
                     <h2 className="text-2xl font-bold text-[var(--text-primary)] italic">Select a Chat to Begin</h2>
                     <p className="mt-2 text-sm max-w-sm text-center opacity-70">Experience seamless enterprise messaging integrated with Classbit's HR ecosystem.</p>
+                </div>
+            )}
+
+            {/* Create Group Modal */}
+            {showGroupModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
+                    <div className="bg-[var(--card-bg)] rounded-3xl p-6 w-full max-w-md shadow-2xl relative">
+                        <button onClick={() => setShowGroupModal(false)} className="absolute top-4 right-4 p-2 hover:bg-[var(--bg-secondary)] rounded-xl"><XCircle className="w-5 h-5 text-slate-400" /></button>
+                        <h2 className="text-xl font-bold text-[var(--text-primary)] mb-6 flex items-center gap-2"><Hash className="w-5 h-5 text-orange-500" /> New Chat Group</h2>
+                        <form onSubmit={handleCreateGroup}>
+                            <div className="mb-4">
+                                <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1 block">Group Name</label>
+                                <input type="text" required value={groupName} onChange={e => setGroupName(e.target.value)} placeholder="e.g. Project Alpha Team" className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500/50" />
+                            </div>
+                            <div className="mb-6">
+                                <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1 block">Select Members</label>
+                                <div className="h-48 overflow-y-auto bg-[var(--bg-secondary)]/30 border border-[var(--border-color)] rounded-xl p-2 custom-scrollbar">
+                                    {chats.map(emp => (
+                                        <label key={emp.id} className="flex items-center gap-3 p-2 hover:bg-[var(--bg-secondary)] rounded-lg cursor-pointer">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={selectedMembers.includes(emp.id)}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) setSelectedMembers(prev => [...prev, emp.id]);
+                                                    else setSelectedMembers(prev => prev.filter(id => id !== emp.id));
+                                                }}
+                                                className="w-4 h-4 rounded text-orange-500 focus:ring-orange-500"
+                                            />
+                                            <span className="text-sm font-medium">{emp.firstName} {emp.lastName}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="flex justify-end gap-3">
+                                <button type="button" onClick={() => setShowGroupModal(false)} className="px-4 py-2 rounded-xl text-sm font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]">Cancel</button>
+                                <button type="submit" disabled={!groupName || selectedMembers.length === 0} className="px-5 py-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white rounded-xl text-sm font-bold shadow-lg shadow-orange-500/20">Create Group</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             )}
         </div>

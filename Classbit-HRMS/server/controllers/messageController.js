@@ -1,9 +1,9 @@
-const { Message, User, Employee, Department } = require('../models');
+const { Message, User, Employee, Department, ChatGroup, ChatGroupMember } = require('../models');
 const { Op } = require('sequelize');
 
 const sendMessage = async (req, res) => {
     try {
-        const { recipientId, departmentId, subject = 'Chat Message', content = '' } = req.body;
+        const { recipientId, departmentId, groupId, subject = 'Chat Message', content = '' } = req.body;
         // Store a relative, forward-slash path so Express static can serve it correctly.
         // req.file.path on Windows returns an absolute path — use filename only instead.
         const attachment = req.file ? `uploads/messages/${req.file.filename}` : null;
@@ -26,6 +26,26 @@ const sendMessage = async (req, res) => {
             }));
             await Message.bulkCreate(messages);
             return res.status(201).json({ message: 'Broadcast sent successfully' });
+        }
+
+        if (groupId) {
+            const group = await ChatGroup.findByPk(groupId, {
+                include: [{ model: ChatGroupMember }]
+            });
+            if (!group) return res.status(404).json({ message: 'Group not found' });
+            
+            const messages = group.ChatGroupMembers.map(member => ({
+                senderId: req.user.id,
+                recipientId: member.userId,
+                groupId,
+                subject,
+                content,
+                attachment,
+                isRead: member.userId === req.user.id
+            }));
+            
+            await Message.bulkCreate(messages);
+            return res.status(201).json({ message: 'Group messages sent successfully' });
         }
 
         const targetEmployee = await Employee.findByPk(recipientId);
@@ -117,10 +137,127 @@ const getConversation = async (req, res) => {
     }
 };
 
+const getDepartmentConversation = async (req, res) => {
+    try {
+        const { departmentId } = req.params;
+
+        const allBroadcasts = await Message.findAll({
+            where: { departmentId },
+            include: [ { model: User, as: 'Sender', attributes: ['id', 'email'] } ],
+            order: [['createdAt', 'ASC']]
+        });
+
+        // Filter out duplicates (created for each employee in the bulkCreate)
+        const uniqueMessages = [];
+        const seen = new Set();
+        for (const msg of allBroadcasts) {
+            // Deduplicate based on exact sender, content, and the timestamp string
+            const key = `${msg.senderId}_${msg.content}_${msg.createdAt.getTime()}`;
+            if (!seen.has(key)) {
+                seen.add(key);
+                uniqueMessages.push(msg);
+            }
+        }
+
+        res.json(uniqueMessages);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const getChatGroups = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const memberships = await ChatGroupMember.findAll({
+            where: { userId },
+            include: [{
+                model: ChatGroup,
+                include: [{ model: User, as: 'Creator', attributes: ['email'] }]
+            }]
+        });
+        
+        const groups = memberships.map(m => m.ChatGroup);
+        res.json(groups);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const createChatGroup = async (req, res) => {
+    try {
+        const { name, memberIds } = req.body; // memberIds are array of Employee IDs from frontend
+        if (!name || !memberIds || !memberIds.length) {
+            return res.status(400).json({ message: 'Group name and members are required' });
+        }
+
+        const group = await ChatGroup.create({ name, creatorId: req.user.id });
+
+        // Include the creator in the group automatically
+        const userIds = [req.user.id];
+
+        // Fetch User IDs for the provided Employee IDs
+        const employees = await Employee.findAll({ where: { id: memberIds } });
+        employees.forEach(emp => {
+            if (emp.userId !== req.user.id) {
+                userIds.push(emp.userId);
+            }
+        });
+
+        const members = userIds.map(uid => ({ groupId: group.id, userId: uid }));
+        await ChatGroupMember.bulkCreate(members);
+
+        res.status(201).json(group);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const getGroupConversation = async (req, res) => {
+    try {
+        const { groupId } = req.params;
+        const allMessages = await Message.findAll({
+            where: { groupId },
+            include: [ { model: User, as: 'Sender', attributes: ['id', 'email'], include: [Employee] } ],
+            order: [['createdAt', 'ASC']]
+        });
+        
+        // Deduplicate
+        const uniqueMessages = [];
+        const seen = new Set();
+        for (const msg of allMessages) {
+            const key = `${msg.senderId}_${msg.content}_${msg.createdAt.getTime()}`;
+            if (!seen.has(key)) {
+                seen.add(key);
+                uniqueMessages.push(msg);
+            }
+        }
+        
+        // Mark as read for this user
+        await Message.update(
+            { isRead: true },
+            {
+                where: {
+                    groupId,
+                    recipientId: req.user.id,
+                    isRead: false
+                }
+            }
+        );
+
+        res.json(uniqueMessages);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     sendMessage,
     getInbox,
     getOutbox,
     getConversation,
+    getDepartmentConversation,
+    getChatGroups,
+    createChatGroup,
+    getGroupConversation,
     markAsRead
 };

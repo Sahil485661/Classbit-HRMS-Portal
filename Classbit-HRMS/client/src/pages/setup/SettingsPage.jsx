@@ -7,7 +7,6 @@ import {
 import RoleManagement from './RoleManagement';
 import CompanySettings from './CompanySettings';
 import DepartmentManagement from './DepartmentManagement';
-import NoticeManagement from './NoticeManagement';
 import StatutorySettings from './StatutorySettings';
 import EmailSettingsView from './EmailSettingsView';
 import { useSelector } from 'react-redux';
@@ -27,8 +26,7 @@ const SettingsPage = () => {
             { id: 'depts', name: 'Departments', icon: Briefcase, desc: 'Configure organizational units and branches.' },
             { id: 'roles', name: 'Role Permissions', icon: Shield, desc: 'Configure what each system role can see and do.' },
             { id: 'email', name: 'Email Settings', icon: Mail, desc: 'SMTP configuration and email templates.' }
-        ] : []),
-        { id: 'notices', name: 'Internal Notices', icon: Bell, desc: 'Manage system announcements and daily quotes.' },
+        ] : [])
     ];
 
     if (currentView !== 'grid') {
@@ -46,7 +44,6 @@ const SettingsPage = () => {
                     {currentView === 'roles' && <RoleManagement />}
                     {currentView === 'company' && <CompanySettings />}
                     {currentView === 'depts' && <DepartmentManagement />}
-                    {currentView === 'notices' && <NoticeManagement />}
                     {currentView === 'compliance' && <StatutorySettings />}
                     {currentView === 'email' && <EmailSettingsView />}
                 </div>

@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import EventCalendar from '../../components/EventCalendar';
+import NoticeboardWidget from '../../components/NoticeboardWidget';
 import {
     Users, FileText, Briefcase, AlertCircle,
     Search, CreditCard, ShoppingCart, TrendingUp
 } from 'lucide-react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid,
-    Tooltip, ResponsiveContainer, PieChart, Pie, Cell
+    Tooltip, ResponsiveContainer
 } from 'recharts';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -73,8 +74,6 @@ const AdminDashboard = () => {
         };
         fetchDashboardData();
     }, []);
-
-    const COLORS = ['#3b82f6', '#ec4899', '#8b5cf6'];
 
     if (loading) return <div className="p-8 text-slate-400 italic">Synchronizing system data...</div>;
 
@@ -202,9 +201,9 @@ const AdminDashboard = () => {
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="w-full">
                 {/* Attendance Chart */}
-                <div className="lg:col-span-2 bg-[var(--card-bg)] border border-[var(--border-color)] p-6 rounded-2xl shadow-xl transition-colors">
+                <div className="w-full bg-[var(--card-bg)] border border-[var(--border-color)] p-6 rounded-2xl shadow-xl transition-colors">
                     <h3 className="text-sm font-bold text-[var(--text-secondary)] mb-6 uppercase tracking-widest text-left">Internal Attendance Trend</h3>
                     <div className="h-80 w-full">
                         <ResponsiveContainer width="100%" height="100%">
@@ -226,56 +225,17 @@ const AdminDashboard = () => {
                         </ResponsiveContainer>
                     </div>
                 </div>
-
-                {/* Gender Distribution */}
-                <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-6 rounded-2xl shadow-xl transition-colors">
-                    <h3 className="text-sm font-bold text-[var(--text-secondary)] mb-6 uppercase tracking-widest text-left">Staff Diversity</h3>
-                    <div className="h-64 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={data?.genderDistribution || []}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={70}
-                                    outerRadius={95}
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                    nameKey="name"
-                                    labelLine={false}
-                                >
-                                    {(data?.genderDistribution || []).map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
-                                    ))}
-                                </Pie>
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '12px', fontSize: '12px' }}
-                                    itemStyle={{ color: 'var(--text-primary)' }}
-                                />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                    <div className="mt-6 space-y-3">
-                        {data?.genderDistribution?.map((item, index) => (
-                            <div key={item.name} className="flex justify-between items-center text-sm">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index] }} />
-                                    <span className="text-[var(--text-secondary)] font-medium">{item.name}</span>
-                                </div>
-                                <span className="text-[var(--text-primary)] font-bold">{item.value}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
             </div>
 
-            {/* Recent Tasks Table */}
-            <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl shadow-xl overflow-hidden transition-colors">
-                <div className="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
-                    <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-widest italic">Active Work Assignments</h3>
-                    <span className="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full font-bold">LIVE UPDATES</span>
-                </div>
-                <div className="overflow-x-auto">
+            {/* Recent Tasks Table & Notices */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                    <div className="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl shadow-xl overflow-hidden transition-colors h-full flex flex-col">
+                        <div className="p-6 border-b border-[var(--border-color)] flex justify-between items-center">
+                            <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-widest italic">Active Work Assignments</h3>
+                            <span className="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full font-bold">LIVE UPDATES</span>
+                        </div>
+                        <div className="overflow-x-auto flex-1">
                     <table className="w-full text-left order-collapse">
                         <thead>
                             <tr className="bg-[var(--bg-secondary)]/30 text-[var(--text-secondary)] text-[10px] uppercase tracking-widest">
@@ -335,8 +295,13 @@ const AdminDashboard = () => {
                     </table>
                 </div>
             </div>
+            </div>
+            <div className="lg:col-span-1">
+                <NoticeboardWidget />
+            </div>
+        </div>
 
-            {/* Scheduling & Agenda Framework */}
+        {/* Scheduling & Agenda Framework */}
             <div className="pt-4">
                 <h3 className="text-xl font-bold text-[var(--text-primary)] mb-6 tracking-tight">System Week Calendar</h3>
                 <EventCalendar viewMode="week" />

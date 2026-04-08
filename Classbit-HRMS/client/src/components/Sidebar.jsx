@@ -6,7 +6,7 @@ import {
     CreditCard, Calendar, BarChart3, Wallet,
     MessageSquare, Settings, UserCog, ClipboardList,
     AlertCircle, TrendingUp, UserPlus, History, Receipt,
-    ChevronDown, ChevronRight
+    ChevronDown, ChevronRight, Bell
 } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 
@@ -24,7 +24,8 @@ const Sidebar = () => {
 
     const menuItems = [
         { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Dashboard' },
-        { name: 'Calendar', icon: Calendar, path: '/calendar', roles: ['Super Admin', 'HR', 'Manager', 'Employee'] },
+        { name: 'Notice Board', icon: Bell, path: '/notices', roles: ['Super Admin', 'HR', 'Manager', 'Employee'] },
+        { name: 'Events', icon: Calendar, path: '/calendar', roles: ['Super Admin', 'HR', 'Manager', 'Employee'] },
         { name: 'Employees', icon: Users, path: '/employees', roles: ['Super Admin', 'HR', 'Manager'], permissionKey: 'Employees' },
         { 
             name: 'Attendance', 

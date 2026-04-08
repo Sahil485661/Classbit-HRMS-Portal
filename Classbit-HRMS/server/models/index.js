@@ -25,6 +25,8 @@ const TaskActivity = require('./TaskActivity');
 const TaskComment = require('./TaskComment');
 const ReimbursementCategory = require('./ReimbursementCategory');
 const ReimbursementClaim = require('./ReimbursementClaim');
+const ChatGroup = require('./ChatGroup');
+const ChatGroupMember = require('./ChatGroupMember');
 
 // Associations
 
@@ -109,6 +111,19 @@ User.hasMany(Message, { foreignKey: 'recipientId', as: 'ReceivedMessages', onDel
 Message.belongsTo(User, { as: 'Sender', foreignKey: 'senderId' });
 Message.belongsTo(User, { as: 'Recipient', foreignKey: 'recipientId' });
 
+// ChatGroup Associations
+User.hasMany(ChatGroup, { foreignKey: 'creatorId' });
+ChatGroup.belongsTo(User, { as: 'Creator', foreignKey: 'creatorId' });
+
+ChatGroup.hasMany(ChatGroupMember, { foreignKey: 'groupId', onDelete: 'CASCADE' });
+ChatGroupMember.belongsTo(ChatGroup, { foreignKey: 'groupId' });
+
+User.hasMany(ChatGroupMember, { foreignKey: 'userId', onDelete: 'CASCADE' });
+ChatGroupMember.belongsTo(User, { foreignKey: 'userId' });
+
+ChatGroup.hasMany(Message, { foreignKey: 'groupId', onDelete: 'CASCADE' });
+Message.belongsTo(ChatGroup, { foreignKey: 'groupId' });
+
 // User - Notification (One-to-Many)
 User.hasMany(Notification, { foreignKey: 'userId', onDelete: 'CASCADE' });
 Notification.belongsTo(User, { foreignKey: 'userId' });
@@ -152,5 +167,7 @@ module.exports = {
     TaskActivity,
     TaskComment,
     ReimbursementCategory,
-    ReimbursementClaim
+    ReimbursementClaim,
+    ChatGroup,
+    ChatGroupMember
 };

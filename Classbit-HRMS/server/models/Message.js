@@ -19,6 +19,10 @@ const Message = sequelize.define('Message', {
         type: DataTypes.INTEGER,
         allowNull: true
     },
+    groupId: {
+        type: DataTypes.UUID,
+        allowNull: true
+    },
     subject: {
         type: DataTypes.STRING,
         allowNull: true

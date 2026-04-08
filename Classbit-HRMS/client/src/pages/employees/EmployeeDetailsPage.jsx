@@ -326,10 +326,12 @@ const EmployeeDetailsPage = () => {
     const [loading, setLoading] = useState(true);
 
     const handleForceResetPassword = async () => {
-        if (!window.confirm(`Are you sure you want to FORCE reset the password for ${employee.firstName}?`)) return;
+        const password = window.prompt(`Are you sure you want to FORCE reset the password for ${employee.firstName}?\n\nPlease enter your Admin password to confirm:`);
+        if (!password) return;
+
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.post(`${API}/employees/${employee.id}/force-password-reset`, {}, {
+            const res = await axios.post(`${API}/employees/${employee.id}/force-password-reset`, { adminPassword: password }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             alert(`Password reset successfully!\n\nTemporary Password: ${res.data.tempPassword}\n\nPlease copy this and share it with the employee securely.`);

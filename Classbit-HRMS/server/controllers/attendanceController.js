@@ -169,8 +169,22 @@ const clockOut = async (req, res) => {
 const getMyAttendance = async (req, res) => {
     try {
         const { employeeId } = req.user;
+        const { month, year } = req.query;
+        const where = { employeeId };
+
+        if (month && year) {
+            const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+            where.date = { [Op.between]: [`${year}-${month.toString().padStart(2, '0')}-01`, `${year}-${month.toString().padStart(2, '0')}-${lastDay}`] };
+        } else if (year) {
+            where.date = { [Op.between]: [`${year}-01-01`, `${year}-12-31`] };
+        } else if (month) {
+            const y = new Date().getFullYear();
+            const lastDay = new Date(y, parseInt(month), 0).getDate();
+            where.date = { [Op.between]: [`${y}-${month.toString().padStart(2, '0')}-01`, `${y}-${month.toString().padStart(2, '0')}-${lastDay}`] };
+        }
+
         const attendance = await Attendance.findAll({
-            where: { employeeId },
+            where,
             include: [AttendanceActivity],
             order: [['date', 'DESC'], [AttendanceActivity, 'startTime', 'ASC']]
         });
@@ -182,9 +196,25 @@ const getMyAttendance = async (req, res) => {
 
 const getAllAttendance = async (req, res) => {
     try {
-        const { date, departmentId } = req.query;
+        const { date, departmentId, month, year, employeeId } = req.query;
         const where = {};
-        if (date) where.date = date;
+        
+        if (date) {
+            where.date = date;
+        } else if (month && year) {
+            const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+            where.date = { [Op.between]: [`${year}-${month.toString().padStart(2, '0')}-01`, `${year}-${month.toString().padStart(2, '0')}-${lastDay}`] };
+        } else if (year) {
+            where.date = { [Op.between]: [`${year}-01-01`, `${year}-12-31`] };
+        } else if (month) {
+            const y = new Date().getFullYear();
+            const lastDay = new Date(y, parseInt(month), 0).getDate();
+            where.date = { [Op.between]: [`${y}-${month.toString().padStart(2, '0')}-01`, `${y}-${month.toString().padStart(2, '0')}-${lastDay}`] };
+        }
+
+        if (employeeId) {
+            where.employeeId = employeeId;
+        }
 
         const include = [
             { model: Employee, include: [Department] },
@@ -200,44 +230,48 @@ const getAllAttendance = async (req, res) => {
             order: [['date', 'DESC'], [AttendanceActivity, 'startTime', 'ASC']]
         });
 
-        // Inject Virtual Absent Records for requested date or today
-        const targetDate = date || new Date().toLocaleDateString('en-CA');
-        
-        // Find all active employees (filtered by department if provided)
-        const empWhere = { status: 'Active' };
-        if (departmentId) empWhere.departmentId = departmentId;
-        const activeEmployees = await Employee.findAll({
-            where: empWhere,
-            include: [Department]
-        });
+        // Inject Virtual Absent Records only if queried for a specific single day (or today by default if no date filters are set)
+        let combined = attendance;
+        if (date || (!month && !year)) {
+            const targetDate = date || new Date().toLocaleDateString('en-CA');
+            
+            // Find all active employees (filtered by department if provided)
+            const empWhere = { status: 'Active' };
+            if (departmentId) empWhere.departmentId = departmentId;
+            if (employeeId) empWhere.id = employeeId;
+            
+            const activeEmployees = await Employee.findAll({
+                where: empWhere,
+                include: [Department]
+            });
 
-        // Extract IDs of employees who ALREADY have a record on targetDate
-        const presentIds = new Set(
-            attendance.filter(a => a.date === targetDate).map(a => a.employeeId)
-        );
+            // Extract IDs of employees who ALREADY have a record on targetDate
+            const presentIds = new Set(
+                attendance.filter(a => a.date === targetDate).map(a => a.employeeId)
+            );
 
-        // Generate virtual missing records
-        const absentRecords = [];
-        activeEmployees.forEach(emp => {
-            if (!presentIds.has(emp.id)) {
-                absentRecords.push({
-                    id: `virtual-absent-${emp.id}-${targetDate}`,
-                    employeeId: emp.id,
-                    date: targetDate,
-                    checkIn: null,
-                    checkOut: null,
-                    workingHours: 0,
-                    overtime: 0,
-                    status: 'Absent',
-                    currentStatus: 'Absent',
-                    Employee: emp,
-                    AttendanceActivities: []
-                });
-            }
-        });
+            // Generate virtual missing records
+            const absentRecords = [];
+            activeEmployees.forEach(emp => {
+                if (!presentIds.has(emp.id)) {
+                    absentRecords.push({
+                        id: `virtual-absent-${emp.id}-${targetDate}`,
+                        employeeId: emp.id,
+                        date: targetDate,
+                        checkIn: null,
+                        checkOut: null,
+                        workingHours: 0,
+                        overtime: 0,
+                        status: 'Absent',
+                        currentStatus: 'Absent',
+                        Employee: emp,
+                        AttendanceActivities: []
+                    });
+                }
+            });
 
-        // Combine and re-sort descending by date
-        const combined = [...attendance, ...absentRecords].sort((a, b) => new Date(b.date) - new Date(a.date));
+            combined = [...attendance, ...absentRecords].sort((a, b) => new Date(b.date) - new Date(a.date));
+        }
 
         res.json(combined);
     } catch (error) {
