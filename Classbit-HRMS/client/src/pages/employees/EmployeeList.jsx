@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useSelector } from 'react-redux';
 import {
     Search, Filter, Plus, MoreVertical, X,
-    Mail, Phone, Calendar, BadgeCheck, Trash2, History
+    Mail, Phone, Calendar, BadgeCheck, Trash2, History, UserCog, UserCheck, UserMinus
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -17,6 +17,8 @@ const EmployeeList = ({ title = "Employee Directory" }) => {
     const [departments, setDepartments] = useState([]);
     const [showFilters, setShowFilters] = useState(false);
     const [importLoading, setImportLoading] = useState(false);
+    const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
+    const [selectedEmployeeToPromote, setSelectedEmployeeToPromote] = useState('');
 
     const fetchEmployees = async () => {
         try {
@@ -91,6 +93,36 @@ const EmployeeList = ({ title = "Employee Directory" }) => {
         }
     };
 
+    const handlePromote = async () => {
+        if (!selectedEmployeeToPromote) return alert('Select an employee to promote');
+        try {
+            const token = localStorage.getItem('token');
+            await axios.patch(`http://localhost:5000/api/employees/${selectedEmployeeToPromote}/promote`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            alert('Employee designated as Manager successfully');
+            setIsPromoteModalOpen(false);
+            setSelectedEmployeeToPromote('');
+            fetchEmployees();
+        } catch (error) {
+            alert(error.response?.data?.message || 'Error promoting employee');
+        }
+    };
+
+    const handleDemote = async (id) => {
+        if (!window.confirm('Are you sure you want to demote this manager back to a regular Employee?')) return;
+        try {
+            const token = localStorage.getItem('token');
+            await axios.patch(`http://localhost:5000/api/employees/${id}/demote`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            alert('Manager demoted to Employee successfully');
+            fetchEmployees();
+        } catch (error) {
+            alert(error.response?.data?.message || 'Error demoting employee');
+        }
+    };
+
     const filteredEmployees = employees.filter(emp => {
         const matchesSearch = `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
             emp.employeeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -100,7 +132,8 @@ const EmployeeList = ({ title = "Employee Directory" }) => {
         const matchesStatus = !filters.status || emp.status === filters.status;
 
         if (title === "Management Hierarchy") {
-            const isLeader = emp.User?.role === 'Manager' || emp.User?.role === 'HR' || emp.User?.role === 'Super Admin';
+            const roleName = emp.User?.Role?.name || '';
+            const isLeader = roleName === 'Manager' || roleName === 'HR' || roleName === 'Super Admin';
             return matchesSearch && matchesDept && matchesStatus && isLeader;
         }
         return matchesSearch && matchesDept && matchesStatus;
@@ -188,13 +221,23 @@ const EmployeeList = ({ title = "Employee Directory" }) => {
                         <History className="w-5 h-5" />
                         History
                     </button>
-                    <button
-                        onClick={() => navigate('/employees/add')}
-                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-blue-900/20"
-                    >
-                        <Plus className="w-5 h-5" />
-                        Add Employee
-                    </button>
+                    {title === "Management Hierarchy" ? (
+                        <button
+                            onClick={() => setIsPromoteModalOpen(true)}
+                            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-indigo-900/20"
+                        >
+                            <UserCog className="w-5 h-5" />
+                            Promote to Manager
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => navigate('/employees/add')}
+                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-blue-900/20"
+                        >
+                            <Plus className="w-5 h-5" />
+                            Add Employee
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -375,6 +418,15 @@ const EmployeeList = ({ title = "Employee Directory" }) => {
                                                         </button>
                                                     )
                                                 )}
+                                                {title === "Management Hierarchy" && user?.role === 'Super Admin' && emp.User?.Role?.name === 'Manager' && (
+                                                    <button
+                                                        onClick={() => handleDemote(emp.id)}
+                                                        className="p-2 text-slate-500 hover:text-orange-500 hover:bg-orange-500/10 rounded-lg transition-all"
+                                                        title="Demote to Employee"
+                                                    >
+                                                        <UserMinus className="w-4 h-4" />
+                                                    </button>
+                                                )}
                                                 {user?.role === 'Super Admin' && (
                                                     <button
                                                         onClick={() => handleFullDelete(emp.id)}
@@ -402,6 +454,48 @@ const EmployeeList = ({ title = "Employee Directory" }) => {
                     </div>
                 </div>
             </div>
+
+            {/* Promote Manager Modal */}
+            {isPromoteModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
+                    <div className="bg-[var(--card-bg)] rounded-3xl p-6 w-full max-w-md shadow-2xl relative">
+                        <button onClick={() => setIsPromoteModalOpen(false)} className="absolute top-4 right-4 p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] rounded-xl transition-colors">
+                            <X className="w-5 h-5" />
+                        </button>
+                        <h2 className="text-xl font-bold text-[var(--text-primary)] mb-6 flex items-center gap-2">
+                            <UserCheck className="w-6 h-6 text-indigo-500" /> Convert to Manager
+                        </h2>
+                        
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-[10px] font-bold text-[var(--text-secondary)] uppercase mb-2">Select Employee</label>
+                                <select 
+                                    value={selectedEmployeeToPromote} 
+                                    onChange={(e) => setSelectedEmployeeToPromote(e.target.value)}
+                                    className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/50"
+                                >
+                                    <option value="">-- Choose an active employee --</option>
+                                    {employees
+                                        .filter(e => e.status === 'Active' && e.User?.Role?.name !== 'Manager' && e.User?.Role?.name !== 'Super Admin')
+                                        .map(emp => (
+                                            <option key={emp.id} value={emp.id}>{emp.firstName} {emp.lastName} ({emp.employeeId})</option>
+                                        ))
+                                    }
+                                </select>
+                            </div>
+                            
+                            <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
+                                <p className="text-xs text-indigo-600 font-medium">Selecting an employee will upgrade their system access rights to the Manager profile permanently.</p>
+                            </div>
+
+                            <div className="flex gap-3 pt-4">
+                                <button type="button" onClick={() => setIsPromoteModalOpen(false)} className="flex-1 px-4 py-3 border border-[var(--border-color)] text-[var(--text-primary)] rounded-xl font-bold text-sm bg-transparent hover:bg-[var(--bg-secondary)] transition-colors">Cancel</button>
+                                <button type="button" onClick={handlePromote} disabled={!selectedEmployeeToPromote} className="flex-1 px-4 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl font-bold text-sm transition-colors shadow-lg shadow-indigo-900/20 border border-indigo-600">Promote to Manager</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </div>
     );

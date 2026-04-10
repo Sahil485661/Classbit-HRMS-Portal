@@ -28,6 +28,7 @@ import AccountingPage from './pages/accounting/AccountingPage';
 import ReportsPage from './pages/reports/ReportsPage';
 import ActivitiesPage from './pages/activities/ActivitiesPage';
 import ReimbursementPage from './pages/reimbursements/ReimbursementPage';
+import MeetingsPage from './pages/meetings/MeetingsPage';
 
 
 class ErrorBoundary extends React.Component {
@@ -242,6 +243,12 @@ function App() {
           <Route path="/managers" element={
             <PrivateRoute roles={['Super Admin']}>
               <AppLayout><EmployeeList title="Management Hierarchy" /></AppLayout>
+            </PrivateRoute>
+          } />
+
+          <Route path="/meetings" element={
+            <PrivateRoute roles={['Super Admin', 'HR', 'Manager', 'Employee']}>
+              <AppLayout><MeetingsPage /></AppLayout>
             </PrivateRoute>
           } />
 

@@ -32,6 +32,7 @@ const EmployeeDashboard = () => {
     const [quote, setQuote] = useState(null);
     const [loading, setLoading] = useState(true);
     const [permittedDesignations, setPermittedDesignations] = useState([]);
+    const [managerInfo, setManagerInfo] = useState(null);
 
     const nowTime = new Date();
     const isAfterOfficeHours = nowTime.getHours() >= 18;
@@ -51,6 +52,26 @@ const EmployeeDashboard = () => {
                 } catch (e) {
                     console.error('Tasks fetch failed', e);
                     setMyWork([]);
+                }
+
+                try {
+                    const empRes = await axios.get('http://localhost:5000/api/employees', { headers });
+                    const myEmpData = Array.isArray(empRes.data) ? empRes.data.find(e => e.userId === user.id) : null;
+                    if (myEmpData) {
+                        let manager = myEmpData.Manager;
+                        if (!manager) {
+                            manager = Array.isArray(empRes.data) ? empRes.data.find(e => 
+                                e.departmentId === myEmpData.departmentId && 
+                                e.id !== myEmpData.id && 
+                                (e.User?.Role?.name === 'Manager' || e.designation === 'Manager')
+                            ) : null;
+                        }
+                        if (manager) {
+                            setManagerInfo(manager);
+                        }
+                    }
+                } catch (e) {
+                    console.error('Employee context fetch failed', e);
                 }
 
                 try {
@@ -151,6 +172,13 @@ const EmployeeDashboard = () => {
                     <p className="text-[var(--text-secondary)] mt-1 max-w-xl italic">
                         {quote ? `"${quote.content}" – ${quote.author || 'Unknown'}` : '"The only way to do great work is to love what you do." – Steve Jobs'}
                     </p>
+                    {managerInfo && (
+                        <div className="mt-4 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl inline-flex items-center gap-2 shadow-sm text-sm">
+                            <Briefcase className="w-4 h-4 text-indigo-500" />
+                            <span className="text-[var(--text-secondary)] font-medium">Reporting to:</span>
+                            <span className="font-bold text-indigo-600 dark:text-indigo-400">{managerInfo.firstName} {managerInfo.lastName}</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Attendance Widget */}
@@ -290,7 +318,7 @@ const EmployeeDashboard = () => {
                     </div>
                 </div>
 
-                <div className="lg:col-span-1">
+                <div className="lg:col-span-1 space-y-6">
                     <NoticeboardWidget />
                 </div>
             </div>

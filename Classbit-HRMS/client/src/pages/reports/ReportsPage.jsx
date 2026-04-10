@@ -115,7 +115,6 @@ const ReportsPage = () => {
     const reportCards = [
         { id: 'attendance', name: 'Attendance Report', desc: 'Analyzes punch-in/out patterns and working hours.', icon: Calendar, color: 'text-blue-500', bg: 'bg-blue-500/10 hover:bg-blue-500 border-blue-500' },
         { id: 'payroll', name: 'Payroll Summary', desc: 'Aggregates disbursements, deductions, and payouts.', icon: CreditCard, color: 'text-emerald-500', bg: 'bg-emerald-500/10 hover:bg-emerald-500 border-emerald-500' },
-        { id: 'performance', name: 'KPI Analytics', desc: 'Tracks employee productivity and appraisal scores.', icon: TrendingUp, color: 'text-indigo-500', bg: 'bg-indigo-500/10 hover:bg-indigo-500 border-indigo-500' },
         { id: 'employees', name: 'Staff Census', desc: 'Company demographics, alignments, and headcount.', icon: Users, color: 'text-amber-500', bg: 'bg-amber-500/10 hover:bg-amber-500 border-amber-500' },
     ];
 

@@ -78,7 +78,8 @@ const EmailSettingsView = () => {
 
     const commonVariables = [
         'company_name', 'portal_url', 'employee_name', 'hr_contact', 'otp',
-        'amount', 'installments', 'start_date', 'end_date', 'reason', 'category'
+        'amount', 'installments', 'start_date', 'end_date', 'reason', 'category',
+        'meeting_title', 'meeting_time', 'meeting_link', 'agenda'
     ];
 
     if (loading) {

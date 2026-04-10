@@ -6,7 +6,7 @@ import {
     CreditCard, Calendar, BarChart3, Wallet,
     MessageSquare, Settings, UserCog, ClipboardList,
     AlertCircle, TrendingUp, UserPlus, History, Receipt,
-    ChevronDown, ChevronRight, Bell
+    ChevronDown, ChevronRight, Bell, Video
 } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 
@@ -43,6 +43,7 @@ const Sidebar = () => {
         { name: 'Reimbursements', icon: Receipt, path: '/reimbursements', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Reimbursements' },
         { name: 'Loan', icon: Wallet, path: '/loan', disabled: role !== 'Super Admin', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Loans' },
         { name: 'Grievance', icon: AlertCircle, path: '/grievance', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Grievances' },
+        { name: 'Meetings', icon: Video, path: '/meetings', roles: ['Super Admin', 'HR', 'Manager', 'Employee'] },
         { name: 'Accounting', icon: BarChart3, path: '/accounting', roles: ['Super Admin'] },
         { name: 'Messages', icon: MessageSquare, path: '/messages', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Messages' },
         { name: 'Managers', icon: UserCog, path: '/managers', roles: ['Super Admin'] },

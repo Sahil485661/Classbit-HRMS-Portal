@@ -15,6 +15,7 @@ const AddEmployeeForm = ({ onSuccess, onCancel, initialData = null }) => {
         roleId: initialData?.User?.roleId || '',
         employeeId: initialData?.employeeId || '',
         departmentId: initialData?.departmentId || '',
+        managerId: initialData?.managerId || '',
         designation: initialData?.designation || '',
         gender: initialData?.gender || 'Male',
         joiningDate: initialData?.joiningDate || new Date().toISOString().split('T')[0],
@@ -43,6 +44,7 @@ const AddEmployeeForm = ({ onSuccess, onCancel, initialData = null }) => {
     const [profilePicture, setProfilePicture] = useState(null);
     const [roles, setRoles] = useState([]);
     const [departments, setDepartments] = useState([]);
+    const [managers, setManagers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
 
@@ -53,12 +55,15 @@ const AddEmployeeForm = ({ onSuccess, onCancel, initialData = null }) => {
         const fetchData = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const [rRes, dRes] = await Promise.all([
+                const [rRes, dRes, eRes] = await Promise.all([
                     axios.get('http://localhost:5000/api/employees/roles', { headers: { Authorization: `Bearer ${token}` } }),
-                    axios.get('http://localhost:5000/api/employees/departments', { headers: { Authorization: `Bearer ${token}` } })
+                    axios.get('http://localhost:5000/api/employees/departments', { headers: { Authorization: `Bearer ${token}` } }),
+                    axios.get('http://localhost:5000/api/employees', { headers: { Authorization: `Bearer ${token}` } })
                 ]);
                 setRoles(rRes.data);
                 setDepartments(dRes.data);
+                const activeManagers = eRes.data.filter(emp => emp.status === 'Active' && emp.User?.Role?.name === 'Manager');
+                setManagers(activeManagers);
             } catch (err) {
                 console.error('Failed to fetch roles/depts', err);
             }
@@ -303,6 +308,16 @@ const AddEmployeeForm = ({ onSuccess, onCancel, initialData = null }) => {
                     {renderInput('roleId', 'text', '', UserCheck, true, true, [
                         <option key="default" value="">Select Role</option>,
                         ...roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)
+                    ])}
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label className={labelClass}>Reporting Manager</label>
+                    {renderInput('managerId', 'text', '', UserCheck, false, true, [
+                        <option key="default" value="">Select Manager (None)</option>,
+                        ...managers.map(m => <option key={m.id} value={m.id}>{m.firstName} {m.lastName}</option>)
                     ])}
                 </div>
             </div>

@@ -14,7 +14,9 @@ const {
     reactivateEmployee,
     fullDeleteEmployee,
     getDeletedEmployees,
-    adminForcePasswordReset
+    adminForcePasswordReset,
+    promoteToManager,
+    demoteToEmployee
 } = require('../controllers/employeeController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const multer = require('multer');
@@ -44,6 +46,8 @@ router.get('/:id', getEmployeeById);
 router.post('/', authorize('Super Admin', 'HR'), upload.single('profilePicture'), createEmployee);
 router.put('/:id', authorize('Super Admin', 'HR'), upload.single('profilePicture'), updateEmployee);
 router.patch('/:id/reactivate', authorize('Super Admin', 'HR'), reactivateEmployee);
+router.patch('/:id/promote', authorize('Super Admin'), promoteToManager);
+router.patch('/:id/demote', authorize('Super Admin'), demoteToEmployee);
 router.post('/:id/force-password-reset', authorize('Super Admin'), adminForcePasswordReset);
 router.delete('/:id', authorize('Super Admin'), deleteEmployee);
 router.delete('/:id/full', authorize('Super Admin'), fullDeleteEmployee);

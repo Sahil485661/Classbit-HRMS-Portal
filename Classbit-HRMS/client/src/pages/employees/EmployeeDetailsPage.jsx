@@ -513,6 +513,7 @@ const EmployeeDetailsPage = () => {
                     <h2 className={sectionHeaderClass}><Briefcase className={iconWrapper} /> Employment Data</h2>
                     <div className="grid grid-cols-1 gap-4">
                         <InfoBlock label="Date of Joining" value={employee.joiningDate} icon={Calendar} />
+                        <InfoBlock label="Reporting Manager" value={employee.Manager ? `${employee.Manager.firstName} ${employee.Manager.lastName}` : 'System Standard'} icon={User} />
                         <InfoBlock label="Role Permissions" value={employee.User?.Role?.name || 'N/A'} icon={ShieldAlert} />
                         <InfoBlock label="Training Period" value={employee.trainingPeriodMonths ? `${employee.trainingPeriodMonths} Month(s)` : '0 Months'} icon={Clock} />
                         <InfoBlock label="Probation Period" value={employee.probationPeriodMonths ? `${employee.probationPeriodMonths} Month(s)` : '0 Months'} icon={Clock} />

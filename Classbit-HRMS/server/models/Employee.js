@@ -128,6 +128,14 @@ const Employee = sequelize.define('Employee', {
     trainingPeriodMonths: {
         type: DataTypes.INTEGER,
         defaultValue: 0
+    },
+    managerId: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        references: {
+            model: 'Employees',
+            key: 'id'
+        }
     }
 }, {
     timestamps: true,

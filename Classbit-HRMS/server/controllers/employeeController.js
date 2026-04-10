@@ -6,7 +6,8 @@ const getAllEmployees = async (req, res) => {
         const employees = await Employee.findAll({
             include: [
                 { model: User, attributes: ['id', 'email', 'isActive', 'lastLogin', 'roleId'], include: [Role] },
-                { model: Department }
+                { model: Department },
+                { model: Employee, as: 'Manager', attributes: ['id', 'firstName', 'lastName', 'userId'] }
             ]
         });
         res.json(employees);
@@ -43,7 +44,8 @@ const getEmployeeById = async (req, res) => {
             include: [
                 { model: User, attributes: ['id', 'email', 'isActive', 'lastLogin', 'roleId'], include: [Role], paranoid: false },
                 { model: Department },
-                { model: Loan }
+                { model: Loan },
+                { model: Employee, as: 'Manager', attributes: ['id', 'firstName', 'lastName', 'userId'] }
             ]
         });
         if (!employee) return res.status(404).json({ message: 'Employee not found' });
@@ -64,7 +66,7 @@ const createEmployee = async (req, res) => {
             emergencyContact, emergencyContactName, nationality,
             phone, dob, address, bankName, bankAccountNumber,
             bankIfscCode, accountHolderName, upiId,
-            trainingPeriodMonths, probationPeriodMonths
+            trainingPeriodMonths, probationPeriodMonths, managerId
         } = req.body;
 
         const profilePicture = req.file ? req.file.filename : null;
@@ -107,7 +109,8 @@ const createEmployee = async (req, res) => {
             upiId,
             trainingPeriodMonths,
             probationPeriodMonths,
-            profilePicture
+            profilePicture,
+            managerId: managerId || null
         });
 
         await createLog(req.user.id, 'CREATE_EMPLOYEE', 'Employees', `Added new employee ${firstName} ${lastName} (${employeeId}).`);
@@ -311,6 +314,61 @@ const adminForcePasswordReset = async (req, res) => {
     }
 };
 
+const promoteToManager = async (req, res) => {
+    try {
+        const employee = await Employee.findByPk(req.params.id, { include: [User] });
+        if (!employee) return res.status(404).json({ message: 'Employee not found' });
+
+        const managerRole = await Role.findOne({ where: { name: 'Manager' } });
+        if (!managerRole) return res.status(500).json({ message: 'System Manager role not found. Please create it first.' });
+
+        employee.designation = 'Manager';
+        await employee.save();
+
+        const user = employee.User;
+        if (user) {
+            user.roleId = managerRole.id;
+            await user.save();
+        }
+
+        await createLog(req.user.id, 'PROMOTE_TO_MANAGER', 'Employees', `Promoted ${employee.firstName} ${employee.lastName} to Manager.`);
+        res.json({ message: 'Employee successfully promoted to Manager', employee });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const demoteToEmployee = async (req, res) => {
+    try {
+        const employee = await Employee.findByPk(req.params.id, { include: [User] });
+        if (!employee) return res.status(404).json({ message: 'Employee not found' });
+
+        const employeeRole = await Role.findOne({ where: { name: 'Employee' } });
+        if (!employeeRole) return res.status(500).json({ message: 'System Employee role not found.' });
+
+        // Update any sub-employees to remove this manager? 
+        // We'll optionally nullify them so they don't report to a non-manager
+        await Employee.update(
+            { managerId: null },
+            { where: { managerId: employee.id } }
+        );
+
+        employee.designation = 'Employee';
+        await employee.save();
+
+        const user = employee.User;
+        if (user) {
+            user.roleId = employeeRole.id;
+            await user.save();
+        }
+
+        await createLog(req.user.id, 'DEMOTE_TO_EMPLOYEE', 'Employees', `Demoted ${employee.firstName} ${employee.lastName} back to Employee.`);
+        res.json({ message: 'Employee successfully demoted', employee });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     getAllEmployees,
     getEmployeeById,
@@ -325,5 +383,7 @@ module.exports = {
     reactivateEmployee,
     fullDeleteEmployee,
     getDeletedEmployees,
-    adminForcePasswordReset
+    adminForcePasswordReset,
+    promoteToManager,
+    demoteToEmployee
 };

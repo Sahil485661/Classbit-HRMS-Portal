@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
-import { Send, MessageSquare, Search, User, MoreVertical, Paperclip, XCircle, Users, Plus, Hash } from 'lucide-react';
+import { Send, MessageSquare, Search, User, MoreVertical, Paperclip, XCircle, Users, Plus, Hash, UserCog } from 'lucide-react';
 
 const MessagesPage = () => {
     const { user } = useSelector((state) => state.auth);
@@ -16,6 +16,7 @@ const MessagesPage = () => {
     const [groups, setGroups] = useState([]);
     const [unreadCounts, setUnreadCounts] = useState({});
     const [searchQuery, setSearchQuery] = useState('');
+    const [myManager, setMyManager] = useState(null);
     
     // Group Creation State
     const [showGroupModal, setShowGroupModal] = useState(false);
@@ -99,7 +100,23 @@ const MessagesPage = () => {
                     axios.get('http://localhost:5000/api/employees/departments', { headers: { Authorization: `Bearer ${token}` } }),
                     axios.get('http://localhost:5000/api/messages/groups', { headers: { Authorization: `Bearer ${token}` } })
                 ]);
-                setChats(empRes.data.filter(e => e.id !== user.employeeId));
+                const emps = empRes.data;
+                const me = emps.find(e => e.userId === user.id);
+                let manager = null;
+                if (me) {
+                    manager = me.Manager;
+                    if (!manager) {
+                        manager = emps.find(e => 
+                            e.departmentId === me.departmentId && 
+                            e.id !== me.id && 
+                            (e.User?.Role?.name === 'Manager' || e.designation === 'Manager')
+                        );
+                    }
+                    if (manager) {
+                        setMyManager(manager);
+                    }
+                }
+                setChats(emps.filter(e => e.id !== user.employeeId && e.id !== manager?.id));
                 setDepartments(deptRes.data);
                 setGroups(groupsRes.data);
             } catch (error) {
@@ -306,6 +323,40 @@ const MessagesPage = () => {
 
                             {/* Direct Messages */}
                             <h3 className="px-6 py-2 text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest border-b border-[var(--border-color)]">Direct Messages</h3>
+                            
+                            {myManager && (
+                                <div
+                                    key={`mgr-${myManager.id}`}
+                                    onClick={() => {
+                                        setMessages([]);
+                                        const mgrChatInfo = { ...myManager, isManagerRole: true };
+                                        setActiveChat(mgrChatInfo);
+                                        fetchMessages(myManager.id, 'user');
+                                    }}
+                                    className={`p-4 flex items-center gap-4 cursor-pointer transition-all border-l-4 ${activeChat?.id === myManager.id ? 'bg-indigo-600/10 border-indigo-500' : 'border-transparent hover:bg-[var(--bg-secondary)]/50'}`}
+                                >
+                                    <div className="relative">
+                                        <div className="w-12 h-12 bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-500 border border-indigo-500/20 shadow-sm">
+                                            <UserCog className="w-5 h-5" />
+                                        </div>
+                                        <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-[var(--card-bg)] rounded-full"></div>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-start">
+                                            <h4 className="font-bold text-[var(--text-primary)] text-sm truncate">My Manager</h4>
+                                            {unreadCounts[myManager.userId] > 0 && (
+                                                <span className="bg-indigo-600 text-[10px] text-white px-1.5 py-0.5 rounded-full font-bold">
+                                                    {unreadCounts[myManager.userId]}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-[11px] text-[var(--text-secondary)] truncate">
+                                            {myManager.firstName} {myManager.lastName}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
                             {chats.filter(chat =>
                                 `${chat.firstName} ${chat.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
                             ).length === 0 ? (
@@ -358,8 +409,8 @@ const MessagesPage = () => {
                                 {activeChat.isDepartment ? <Users className="w-5 h-5"/> : activeChat.isGroup ? <Hash className="w-5 h-5" /> : `${activeChat.firstName?.[0]}${activeChat.lastName?.[0]}`}
                             </div>
                             <div>
-                                <h3 className="font-bold text-[var(--text-primary)]">{activeChat.isDepartment ? `${activeChat.name} Department` : activeChat.isGroup ? activeChat.name : `${activeChat.firstName} ${activeChat.lastName}`}</h3>
-                                <p className={`text-[10px] ${activeChat.isDepartment ? 'text-indigo-500' : activeChat.isGroup ? 'text-orange-500' : (activeChat.User?.lastLogin ? 'text-green-500' : 'text-[var(--text-secondary)]')} font-bold uppercase tracking-widest text-left`}>
+                                <h3 className="font-bold text-[var(--text-primary)]">{activeChat.isDepartment ? `${activeChat.name} Department` : activeChat.isGroup ? activeChat.name : activeChat.isManagerRole ? `My Manager (${activeChat.firstName} ${activeChat.lastName})` : `${activeChat.firstName} ${activeChat.lastName}`}</h3>
+                                <p className={`text-[10px] ${activeChat.isDepartment ? 'text-indigo-500' : activeChat.isGroup ? 'text-orange-500' : activeChat.isManagerRole ? 'text-indigo-500' : (activeChat.User?.lastLogin ? 'text-green-500' : 'text-[var(--text-secondary)]')} font-bold uppercase tracking-widest text-left`}>
                                     {activeChat.isDepartment ? 'Broadcast Channel' : activeChat.isGroup ? 'Group Conversation' : (activeChat.User?.lastLogin ? `Last Active: ${new Date(activeChat.User.lastLogin).toLocaleDateString()} ${new Date(activeChat.User.lastLogin).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Offline')}
                                 </p>
                             </div>

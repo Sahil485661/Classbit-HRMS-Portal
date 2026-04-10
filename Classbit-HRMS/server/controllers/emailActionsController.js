@@ -27,7 +27,7 @@ exports.notifyLoan = async (req, res) => {
         if (success) {
             res.json({ message: 'Employee notified successfully' });
         } else {
-            res.status(500).json({ message: 'Failed to send email. Check logs for details.' });
+            res.status(200).json({ message: 'Email not sent (Check SMTP config), but logged.' });
         }
     } catch (error) {
         console.error('Error notifying loan status:', error);
@@ -62,7 +62,7 @@ exports.notifyLeave = async (req, res) => {
         if (success) {
             res.json({ message: 'Employee notified successfully' });
         } else {
-            res.status(500).json({ message: 'Failed to send email' });
+            res.status(200).json({ message: 'Email not sent (Check SMTP config), but logged.' });
         }
     } catch (error) {
         console.error('Error notifying leave status:', error);
@@ -97,7 +97,7 @@ exports.notifyReimbursement = async (req, res) => {
         if (success) {
             res.json({ message: 'Employee notified successfully' });
         } else {
-            res.status(500).json({ message: 'Failed to send email' });
+            res.status(200).json({ message: 'Email not sent (Check SMTP config), but logged.' });
         }
     } catch (error) {
         console.error('Error notifying reimbursement status:', error);

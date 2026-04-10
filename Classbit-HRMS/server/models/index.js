@@ -27,6 +27,7 @@ const ReimbursementCategory = require('./ReimbursementCategory');
 const ReimbursementClaim = require('./ReimbursementClaim');
 const ChatGroup = require('./ChatGroup');
 const ChatGroupMember = require('./ChatGroupMember');
+const Meeting = require('./Meeting');
 
 // Associations
 
@@ -41,6 +42,10 @@ Employee.belongsTo(User, { foreignKey: 'userId' });
 // Department - Employee (One-to-Many)
 Department.hasMany(Employee, { foreignKey: 'departmentId' });
 Employee.belongsTo(Department, { foreignKey: 'departmentId' });
+
+// Employee - Employee (Manager-to-Subordinate)
+Employee.belongsTo(Employee, { as: 'Manager', foreignKey: 'managerId' });
+Employee.hasMany(Employee, { as: 'Subordinates', foreignKey: 'managerId' });
 
 // Employee - Attendance (One-to-Many)
 Employee.hasMany(Attendance, { foreignKey: 'employeeId', onDelete: 'CASCADE' });
@@ -169,5 +174,6 @@ module.exports = {
     ReimbursementCategory,
     ReimbursementClaim,
     ChatGroup,
-    ChatGroupMember
+    ChatGroupMember,
+    Meeting
 };

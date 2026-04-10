@@ -13,7 +13,7 @@ export const login = createAsyncThunk('auth/login', async (credentials, { reject
         localStorage.setItem('user', JSON.stringify(response.data.user));
         return response.data;
     } catch (error) {
-        return rejectWithValue(error.response.data);
+        return rejectWithValue(error.response?.data || { message: error.message || 'Connection failed' });
     }
 });
 
@@ -57,7 +57,7 @@ const authSlice = createSlice({
             })
             .addCase(login.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.payload.message;
+                state.error = action.payload?.message || action.error?.message || 'Login failed';
             });
     }
 });

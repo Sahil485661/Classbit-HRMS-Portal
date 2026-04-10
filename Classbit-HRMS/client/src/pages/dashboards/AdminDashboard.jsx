@@ -296,7 +296,7 @@ const AdminDashboard = () => {
                 </div>
             </div>
             </div>
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 space-y-6">
                 <NoticeboardWidget />
             </div>
         </div>

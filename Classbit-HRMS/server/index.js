@@ -25,6 +25,7 @@ app.use('/api/accounting', require('./routes/accountingRoutes'));
 app.use('/api/messages', require('./routes/messageRoutes'));
 app.use('/api/notices', require('./routes/noticeRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/meetings', require('./routes/meetingRoutes'));
 
 app.use('/api/activities', require('./routes/activityRoutes'));
 app.use('/api/setup/compliance', require('./routes/complianceRoutes'));
