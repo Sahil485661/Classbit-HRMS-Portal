@@ -177,11 +177,11 @@ const MeetingsPage = () => {
                                             return (
                                                 <div className="w-full">
                                                     {isJoinActive && meeting.meetingLink ? (
-                                                        <a href={meeting.meetingLink} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-full px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm rounded-lg transition-colors shadow-md shadow-blue-500/20">
+                                                        <a href={meeting.meetingLink} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-full px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm rounded-lg transition-colors shadow-md shadow-blue-500/20" style={{ color: 'white' }}>
                                                             Join Now
                                                         </a>
                                                     ) : (
-                                                        <button disabled className="flex items-center justify-center w-full px-4 py-2 bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-secondary)] font-bold text-sm rounded-lg opacity-60 cursor-not-allowed">
+                                                        <button disabled className="flex items-center justify-center w-full px-4 py-2 bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)] font-bold text-sm rounded-lg opacity-60 cursor-not-allowed">
                                                             {meeting.status === 'Canceled' ? 'Canceled' : 'Join Now (Active 5 mins before)'}
                                                         </button>
                                                     )}

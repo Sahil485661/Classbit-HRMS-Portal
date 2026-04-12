@@ -7,9 +7,10 @@ import {
     LogOut, Bell, Search, User, X, Mail, Phone,
     Briefcase, Building2, CreditCard, IndianRupee, Shield,
     MapPin, Calendar, Heart, Flag, MessageCircle, ChevronRight,
-    TrendingUp, TrendingDown, FileText, Database
+    TrendingUp, TrendingDown, FileText, Database, Menu
 } from 'lucide-react';
 import NotificationHub from './NotificationHub';
+import { useSidebar } from '../contexts/SidebarContext';
 
 const API = 'http://localhost:5000/api';
 
@@ -177,6 +178,7 @@ const Navbar = () => {
     const navigate = useNavigate();
     const { user } = useSelector((state) => state.auth);
     const [profileOpen, setProfileOpen] = useState(false);
+    const { setIsMobileOpen } = useSidebar();
 
     const handleLogout = () => {
         dispatch(logout());
@@ -185,7 +187,16 @@ const Navbar = () => {
 
     return (
         <>
-            <header className="h-16 bg-[var(--card-bg)] backdrop-blur-md border-b border-[var(--border-color)] flex items-center justify-end px-8 sticky top-0 z-10 transition-colors">                <div className="flex items-center gap-6">
+            <header className="h-16 bg-[var(--card-bg)] backdrop-blur-md border-b border-[var(--border-color)] flex items-center justify-between md:justify-end px-4 md:px-8 sticky top-0 z-10 transition-colors">
+                {/* Mobile Hamburger */}
+                <button 
+                    onClick={() => setIsMobileOpen(true)}
+                    className="p-2 md:hidden text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] rounded-md transition-colors"
+                >
+                    <Menu className="w-6 h-6" />
+                </button>
+                
+                <div className="flex items-center gap-4 md:gap-6">
                     <NotificationHub />
 
                     <div className="h-8 w-[1px] bg-[var(--border-color)]" />

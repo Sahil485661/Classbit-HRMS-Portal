@@ -1,9 +1,18 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Provider, useSelector } from 'react-redux';
+import { Provider, useSelector, useDispatch } from 'react-redux';
 import { store } from './store';
 import Navbar from './components/Navbar';
-import Sidebar from './components/Sidebar';
+import { SessionNavBar } from './components/ui/sidebar';
+import { SidebarProvider } from './contexts/SidebarContext';
+import { logout } from './slices/authSlice';
+import {
+    LayoutDashboard, Users, Clock, Briefcase,
+    CreditCard, Calendar, BarChart3, Landmark,
+    MessageSquare, Settings, UserCog, ClipboardList,
+    AlertCircle, TrendingUp, UserPlus, History, Receipt,
+    ChevronDown, ChevronRight, Bell, Video
+} from 'lucide-react';
 import Login from './pages/Login';
 import CalendarPage from './pages/calendar/CalendarPage';
 import ForceChangePassword from './pages/ForceChangePassword';
@@ -86,19 +95,92 @@ const PrivateRoute = ({ children, roles, permissionKey }) => {
 };
 
 const AppLayout = ({ children }) => {
-  const { token } = useSelector((state) => state.auth);
+  const { token, user } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
   if (!token) return <Navigate to="/login" />;
 
+  const role = user?.role;
+  const permissions = user?.permissions;
+
+  const menuItems = [
+      { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Dashboard' },
+      { name: 'Notice Board', icon: Bell, path: '/notices', roles: ['Super Admin', 'HR', 'Manager', 'Employee'] },
+      { name: 'Calendar', icon: Calendar, path: '/calendar', roles: ['Super Admin', 'HR', 'Manager', 'Employee'] },
+      { name: 'Employees', icon: Users, path: '/employees', roles: ['Super Admin', 'HR', 'Manager'], permissionKey: 'Employees' },
+      { 
+          name: 'Attendance', 
+          icon: Clock, 
+          path: '#',
+          roles: ['Super Admin', 'HR', 'Manager', 'Employee'], 
+          permissionKey: 'Attendance',
+          subItems: [
+              { name: 'Attendance Log', path: '/attendance' },
+              { name: 'Leave', path: '/leave' }
+          ]
+      },
+      { name: 'Work', icon: Briefcase, path: '/work', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Tasks' },
+      { name: 'Payroll', icon: CreditCard, path: '/payroll', roles: ['Super Admin', 'HR', 'Employee'], permissionKey: 'Payroll' },
+      { name: 'Reimbursements', icon: Receipt, path: '/reimbursements', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Reimbursements' },
+      { name: 'Loan', icon: Landmark, path: '/loan', disabled: role !== 'Super Admin', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Loans' },
+      { name: 'Grievance', icon: AlertCircle, path: '/grievance', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Grievances' },
+      { name: 'Meetings', icon: Video, path: '/meetings', roles: ['Super Admin', 'HR', 'Manager', 'Employee'] },
+      { name: 'Accounting', icon: BarChart3, path: '/accounting', roles: ['Super Admin'] },
+      { name: 'Messages', icon: MessageSquare, path: '/messages', roles: ['Super Admin', 'HR', 'Manager', 'Employee'], permissionKey: 'Messages' },
+      { name: 'Managers', icon: UserCog, path: '/managers', roles: ['Super Admin'] },
+      { name: 'Reports', icon: ClipboardList, path: '/reports', roles: ['Super Admin', 'HR'] },
+      { name: 'Setup', icon: Settings, path: '/setup', roles: ['Super Admin', 'HR'], permissionKey: 'Settings' },
+      { name: 'Activities', icon: History, path: '/activities', roles: ['Super Admin'] },
+  ];
+
+  const filteredItems = menuItems.filter(item => {
+      if (role === 'Super Admin' && item.roles.includes('Super Admin')) return true;
+      if (permissions === undefined || permissions.length === 0) return item.roles.includes(role);
+      if (item.permissionKey) return permissions.includes(item.permissionKey);
+      return item.roles.includes(role);
+  });
+
+  const navItems = filteredItems.map(item => ({
+      label: item.name,
+      icon: <item.icon className="w-4 h-4" />,
+      href: item.path,
+      disabled: item.disabled,
+      subItems: item.subItems ? item.subItems.map(subItem => ({
+          label: subItem.name,
+          href: subItem.path
+      })) : undefined
+  }));
+
+  const userContext = {
+      name: `${user?.firstName} ${user?.lastName}`,
+      email: user?.email,
+      role: user?.role,
+      avatar: user?.profilePicture && user.profilePicture !== 'null' 
+          ? (user.profilePicture.startsWith('http') ? user.profilePicture : `http://localhost:5000/uploads/${user.profilePicture}`) 
+          : null
+  };
+
+  const onLogout = () => {
+      dispatch(logout());
+      window.location.href = '/login';
+  };
+
   return (
-    <div className="flex h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-hidden transition-colors duration-300">
-      <Sidebar />
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <Navbar />
-        <main className="flex-1 overflow-y-auto p-6 bg-[var(--bg-secondary)] backdrop-blur-sm">
-          {children}
-        </main>
+    <SidebarProvider>
+      <div className="flex h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-hidden transition-colors duration-300">
+        <SessionNavBar 
+            organization={{ name: 'Classbit HRM', logo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=100&q=80' }}
+            userContext={userContext}
+            navItems={navItems}
+            onLogout={onLogout}
+        />
+        <div className="flex flex-col flex-1 min-w-0 overflow-hidden relative">
+          <Navbar />
+          <main className="flex-1 overflow-y-auto p-6 bg-[var(--bg-secondary)] backdrop-blur-sm z-0 relative">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 
