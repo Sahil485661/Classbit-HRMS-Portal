@@ -98,7 +98,7 @@
   color: #222222 !important; /* Stronger text contrast */
 }
 
-.light-mode a,
+.light-mode a:not([class*="text-white"]),
 .light-mode .sidebar-btn {
   color: #0056b3 !important; /* Clear link color */
 }

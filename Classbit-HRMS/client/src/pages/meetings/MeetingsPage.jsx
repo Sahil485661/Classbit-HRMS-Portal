@@ -177,7 +177,12 @@ const MeetingsPage = () => {
                                             return (
                                                 <div className="w-full">
                                                     {isJoinActive && meeting.meetingLink ? (
-                                                        <a href={meeting.meetingLink} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-full px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm rounded-lg transition-colors shadow-md shadow-blue-500/20" style={{ color: 'white' }}>
+                                                        <a 
+                                                            href={meeting.meetingLink?.startsWith('http') ? meeting.meetingLink : `https://${meeting.meetingLink}`} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer" 
+                                                            className="flex items-center justify-center w-full px-4 py-2 bg-blue-600 hover:bg-blue-500 !text-white font-bold text-sm rounded-lg transition-colors shadow-md shadow-blue-500/20"
+                                                        >
                                                             Join Now
                                                         </a>
                                                     ) : (
