@@ -168,7 +168,7 @@ const AppLayout = ({ children }) => {
     <SidebarProvider>
       <div className="flex h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-hidden transition-colors duration-300">
         <SessionNavBar 
-            organization={{ name: 'Classbit HRM', logo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=100&q=80' }}
+            organization={{ name: 'Classbit Connect', logo: '/logo.png' }}
             userContext={userContext}
             navItems={navItems}
             onLogout={onLogout}

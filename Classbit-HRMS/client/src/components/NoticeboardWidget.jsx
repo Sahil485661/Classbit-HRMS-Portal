@@ -17,8 +17,7 @@ const NoticeboardWidget = () => {
                 const res = await axios.get('http://localhost:5000/api/notices', { headers });
                 
                 const activeNotices = (res.data || [])
-                    .filter(n => n.type === 'Notice' || n.type === 'Announcement')
-                    .slice(0, 3); // Get 3 most recent
+                    .filter(n => n.type === 'Notice' || n.type === 'Announcement');
                 setNotices(activeNotices);
             } catch (err) {
                 console.error('Error fetching notices highlight', err);
@@ -60,7 +59,7 @@ const NoticeboardWidget = () => {
                 </button>
             </div>
 
-            <div className="flex-1 flex flex-col gap-3">
+            <div className="flex-1 flex flex-col gap-3 overflow-y-auto max-h-[420px] custom-scrollbar pr-2 pb-2">
                 {loading ? (
                     <div className="text-center text-[var(--text-secondary)] italic text-sm py-4 flex-1 flex items-center justify-center">Checking for updates...</div>
                 ) : notices.length === 0 ? (
@@ -72,7 +71,7 @@ const NoticeboardWidget = () => {
                     notices.map((notice) => {
                         const Icon = getTypeIcon(notice.type);
                         return (
-                            <div key={notice.id} className="p-4 rounded-2xl border border-[var(--border-color)] hover:border-blue-500/30 transition-colors bg-[var(--bg-secondary)]/30 relative overflow-hidden group text-left">
+                            <div key={notice.id} onClick={() => navigate('/notices')} className="p-4 rounded-2xl border border-[var(--border-color)] hover:border-blue-500/30 transition-colors bg-[var(--bg-secondary)]/30 relative overflow-hidden group text-left cursor-pointer hover:bg-[var(--bg-secondary)]">
                                 <div className="flex items-start gap-3">
                                     <div className={`p-2 rounded-xl shrink-0 ${getTypeColor(notice.type)}`}>
                                         <Icon className="w-4 h-4" />

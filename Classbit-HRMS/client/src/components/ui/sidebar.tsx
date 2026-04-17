@@ -142,28 +142,32 @@ export function SessionNavBar({ organization, userContext, navItems, onLogout })
                     <DropdownMenuTrigger className="w-full" asChild>
                       <Button
                         variant="ghost"
-                        size="sm"
-                        className={cn("flex items-center hover:bg-[var(--bg-secondary)] text-[var(--text-primary)]", isCollapsed ? "justify-center px-0 w-10 h-10" : "px-2 w-full justify-start gap-3")} 
+                        className={cn("flex items-center hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] h-auto py-2", isCollapsed ? "justify-center px-0 w-12" : "px-2 w-full justify-start")} 
                       >
-                        <Avatar className="rounded size-6 shrink-0">
-                          {organization?.logo ? (
-                            <AvatarImage src={organization.logo} />
-                          ) : (
+                        {organization?.logo ? (
+                          <img 
+                            src={organization.logo} 
+                            alt={organization.name || "Organization Logo"} 
+                            className={cn(
+                              "object-contain transition-all duration-300",
+                              isCollapsed ? "w-10 h-10" : "w-[90%] max-w-[200px] h-auto"
+                            )} 
+                          />
+                        ) : (
+                          <Avatar className="rounded size-6 shrink-0">
                             <AvatarFallback className="bg-blue-600 text-white text-xs">
                               {organization?.name?.[0] || "O"}
                             </AvatarFallback>
-                          )}
-                        </Avatar>
-                        <motion.li variants={variants} className="flex flex-1 items-center justify-between overflow-hidden">
-                          {!isCollapsed && (
-                            <>
-                              <p className="text-sm font-semibold truncate">
-                                {organization?.name || "Organization"}
-                              </p>
-                              <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground/50" />
-                            </>
-                          )}
-                        </motion.li>
+                          </Avatar>
+                        )}
+                        {!isCollapsed && !organization?.logo && (
+                          <motion.li variants={variants} className="flex flex-1 items-center justify-between overflow-hidden">
+                            <p className="text-sm font-semibold truncate ml-3">
+                              {organization?.name || "Organization"}
+                            </p>
+                            <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+                          </motion.li>
+                        )}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" className="w-56 bg-[var(--card-bg)] border-[var(--border-color)]">

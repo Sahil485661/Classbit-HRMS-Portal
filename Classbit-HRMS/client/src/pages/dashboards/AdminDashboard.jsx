@@ -12,8 +12,10 @@ import {
 } from 'recharts';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
+    const navigate = useNavigate();
     const [data, setData] = useState(null);
     const [recentTasks, setRecentTasks] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -60,7 +62,7 @@ const AdminDashboard = () => {
 
                 try {
                     const tasksRes = await axios.get('http://localhost:5000/api/tasks/my', { headers });
-                    setRecentTasks(Array.isArray(tasksRes.data) ? tasksRes.data.slice(0, 5) : []);
+                    setRecentTasks(Array.isArray(tasksRes.data) ? tasksRes.data : []);
                 } catch (e) {
                     console.error('Recent tasks fetch failed:', e);
                     setRecentTasks([]);
@@ -251,7 +253,7 @@ const AdminDashboard = () => {
                                 <tr><td colSpan="5" className="px-6 py-12 text-center text-slate-500 italic">No recent assignments found.</td></tr>
                             ) : (
                                 recentTasks.map((task) => (
-                                    <tr key={task.id} className="hover:bg-slate-800/10 transition-colors">
+                                    <tr key={task.id} className="hover:bg-slate-800/10 transition-colors cursor-pointer" onClick={() => navigate(`/work/tasks/${task.id}`)}>
                                         <td className="px-6 py-4">
                                             <div className="text-sm font-bold text-[var(--text-primary)]">{task.title}</div>
                                             <div className="text-[10px] text-[var(--text-secondary)] line-clamp-1">{task.description}</div>

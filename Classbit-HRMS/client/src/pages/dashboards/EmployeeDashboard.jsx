@@ -283,7 +283,8 @@ const EmployeeDashboard = () => {
                             myWork.map((task, idx) => (
                                 <div
                                     key={task.id}
-                                    className={`p-6 flex items-center justify-between hover:bg-[var(--bg-secondary)] transition-colors ${idx !== myWork.length - 1 ? 'border-b border-[var(--border-color)]' : ''}`}
+                                    onClick={() => navigate(`/work/tasks/${task.id}`)}
+                                    className={`p-6 flex items-center justify-between hover:bg-[var(--bg-secondary)] transition-colors cursor-pointer ${idx !== myWork.length - 1 ? 'border-b border-[var(--border-color)]' : ''}`}
                                 >
                                     <div className="flex gap-4 items-center">
                                         <div className={`p-3 rounded-xl ${task.priority === 'High' ? 'bg-red-500/10 text-red-400' :
