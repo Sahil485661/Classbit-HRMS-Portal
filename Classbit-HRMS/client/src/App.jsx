@@ -1,5 +1,6 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
 import { Provider, useSelector, useDispatch } from 'react-redux';
 import { store } from './store';
 import Navbar from './components/Navbar';
@@ -14,6 +15,7 @@ import {
     ChevronDown, ChevronRight, Bell, Video
 } from 'lucide-react';
 import Login from './pages/Login';
+import SetupAdmin from './pages/setup/SetupAdmin';
 import CalendarPage from './pages/calendar/CalendarPage';
 import ForceChangePassword from './pages/ForceChangePassword';
 import ForgotPassword from './pages/ForgotPassword';
@@ -184,11 +186,58 @@ const AppLayout = ({ children }) => {
   );
 };
 
+const SetupGuard = ({ children }) => {
+  const [status, setStatus] = useState({ loading: true, setupRequired: false });
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+      const checkSetup = async () => {
+          try {
+              const response = await axios.get('http://localhost:5000/api/setup/status');
+              if (response.data.setupRequired) {
+                  setStatus({ loading: false, setupRequired: true });
+                  if (location.pathname !== '/setup-admin') {
+                      navigate('/setup-admin');
+                  }
+              } else {
+                  setStatus({ loading: false, setupRequired: false });
+                  if (location.pathname === '/setup-admin') {
+                      navigate('/login');
+                  }
+              }
+          } catch (err) {
+              console.error("Setup check failed", err);
+              setStatus({ loading: false, setupRequired: false });
+          }
+      };
+      
+      checkSetup();
+  }, [location.pathname, navigate]);
+
+  if (status.loading) {
+      return (
+          <div className="flex justify-center items-center h-screen bg-[var(--bg-primary)]">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          </div>
+      );
+  }
+
+  // If setup is required and we aren't on /setup-admin, don't render children until redirect completes
+  if (status.setupRequired && location.pathname !== '/setup-admin') {
+      return null;
+  }
+
+  return children;
+};
+
 function App() {
   return (
     <Provider store={store}>
       <Router>
-        <Routes>
+        <SetupGuard>
+          <Routes>
+          <Route path="/setup-admin" element={<SetupAdmin />} />
           <Route path="/login" element={<Login />} />
           <Route path="/force-change-password" element={<ForceChangePassword />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -336,6 +385,7 @@ function App() {
 
 
         </Routes>
+        </SetupGuard>
       </Router>
     </Provider>
   );

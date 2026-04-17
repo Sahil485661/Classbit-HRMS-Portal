@@ -60,6 +60,20 @@ const startServer = async () => {
         console.log('Database synced');
     }
 
+    const setupTokenService = require('./utils/setupTokenService');
+    const { Role, User } = require('./models');
+    
+    // Check if Setup Token is required on startup
+    const adminRole = await Role.findOne({ where: { name: 'Super Admin' } });
+    let adminExists = false;
+    if (adminRole) {
+        const count = await User.count({ where: { roleId: adminRole.id } });
+        if (count > 0) adminExists = true;
+    }
+    if (!adminExists) {
+        setupTokenService.generateToken();
+    }
+
     app.listen(PORT, () => {
         console.log(`Server is running on port ${PORT}`);
     });
