@@ -28,6 +28,8 @@ const ReimbursementClaim = require('./ReimbursementClaim');
 const ChatGroup = require('./ChatGroup');
 const ChatGroupMember = require('./ChatGroupMember');
 const Meeting = require('./Meeting');
+const Company = require('./Company');
+const AppConfig = require('./AppConfig');
 
 // Associations
 
@@ -175,5 +177,7 @@ module.exports = {
     ReimbursementClaim,
     ChatGroup,
     ChatGroupMember,
-    Meeting
+    Meeting,
+    Company,
+    AppConfig
 };

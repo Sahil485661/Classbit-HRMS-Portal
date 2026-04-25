@@ -99,6 +99,23 @@ const PrivateRoute = ({ children, roles, permissionKey }) => {
 const AppLayout = ({ children }) => {
   const { token, user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
+  const [company, setCompany] = useState({ name: 'Classbit Connect', logo: '/logo.png' });
+
+  useEffect(() => {
+      const fetchCompany = async () => {
+          try {
+              const res = await axios.get('http://localhost:5000/api/setup/company');
+              setCompany({
+                  name: res.data.name || 'Classbit Connect',
+                  logo: res.data.logoUrl ? `http://localhost:5000/uploads/${res.data.logoUrl}` : '/logo.png'
+              });
+          } catch (err) {
+              console.error('Failed to load company details', err);
+          }
+      };
+      fetchCompany();
+  }, []);
+
   if (!token) return <Navigate to="/login" />;
 
   const role = user?.role;
@@ -170,7 +187,7 @@ const AppLayout = ({ children }) => {
     <SidebarProvider>
       <div className="flex h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-hidden transition-colors duration-300">
         <SessionNavBar 
-            organization={{ name: 'Classbit Connect', logo: '/logo.png' }}
+            organization={company}
             userContext={userContext}
             navItems={navItems}
             onLogout={onLogout}

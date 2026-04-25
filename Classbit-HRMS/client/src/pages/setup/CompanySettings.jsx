@@ -18,15 +18,20 @@ const CompanySettings = () => {
         const fetchSettings = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const res = await axios.get('http://localhost:5000/api/setup?category=General', {
+                const res = await axios.get('http://localhost:5000/api/setup/company', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 
-                // Find company_details from array
-                const detailSetting = res.data.find(s => s.key === 'company_details');
-                if (detailSetting && detailSetting.value) {
-                    const parsed = typeof detailSetting.value === 'string' ? JSON.parse(detailSetting.value) : detailSetting.value;
-                    setSettings(prev => ({ ...prev, ...parsed }));
+                if (res.data && res.data.id) {
+                    setSettings({
+                        companyName: res.data.name || '',
+                        website: res.data.website || '',
+                        contactEmail: res.data.contactEmail || '',
+                        phone: res.data.contactNumber || '',
+                        address: res.data.address || '',
+                        currency: res.data.currency || 'USD',
+                        timezone: res.data.timezone || 'UTC-8 (Pacific Time)'
+                    });
                 }
             } catch (error) {
                 console.error('Failed to load company details', error);
@@ -40,10 +45,14 @@ const CompanySettings = () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            await axios.post('http://localhost:5000/api/setup', {
-                key: 'company_details',
-                value: settings,
-                category: 'General'
+            await axios.post('http://localhost:5000/api/setup/company', {
+                name: settings.companyName,
+                website: settings.website,
+                contactEmail: settings.contactEmail,
+                contactNumber: settings.phone,
+                address: settings.address,
+                currency: settings.currency,
+                timezone: settings.timezone
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });

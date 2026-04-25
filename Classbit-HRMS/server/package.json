@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "server": "nodemon index.js",
-    "data:import": "node seeder.js"
+    "data:import": "node seeder.js",
+    "setup": "node setup-env.js"
   },
   "keywords": [],
   "author": "",

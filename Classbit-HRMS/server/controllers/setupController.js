@@ -1,14 +1,24 @@
-const { Setting, User, Role, sequelize } = require('../models');
+const { Setting, User, Role, Company, AppConfig, sequelize } = require('../models');
 const setupTokenService = require('../utils/setupTokenService');
 
 const getSetupStatus = async (req, res) => {
     try {
+        // Check if admin exists
         const adminRole = await Role.findOne({ where: { name: 'Super Admin' } });
-        
-        let isSetupComplete = false;
+        let adminExists = false;
         if (adminRole) {
             const adminCount = await User.count({ where: { roleId: adminRole.id } });
-            if (adminCount > 0) isSetupComplete = true;
+            if (adminCount > 0) adminExists = true;
+        }
+
+        const configCheck = await AppConfig.findOne({ where: { key: 'isSetupComplete' } });
+        let isSetupComplete = false;
+        
+        // Setup is only truly complete if both the config says so AND an admin actually exists
+        if (configCheck && configCheck.value === 'true' && adminExists) {
+            isSetupComplete = true;
+        } else if (adminExists) {
+            isSetupComplete = true; // Fallback
         }
 
         if (isSetupComplete) {
@@ -32,10 +42,24 @@ const getSetupStatus = async (req, res) => {
     }
 };
 
-const createAdmin = async (req, res) => {
+const completeSetup = async (req, res) => {
     const transaction = await sequelize.transaction();
     try {
-        const { name, email, password, setupToken } = req.body;
+        const { companyName, address, contactNumber, name, email, password, setupToken } = req.body;
+
+        let adminRole = await Role.findOne({ where: { name: 'Super Admin' }, transaction });
+        let adminExists = false;
+        if (adminRole) {
+            const adminCount = await User.count({ where: { roleId: adminRole.id }, transaction });
+            if (adminCount > 0) adminExists = true;
+        }
+
+        // Check if already completed AND admin exists
+        const configCheck = await AppConfig.findOne({ where: { key: 'isSetupComplete' }, transaction });
+        if (configCheck && configCheck.value === 'true' && adminExists) {
+            await transaction.rollback();
+            return res.status(400).json({ message: 'Setup is already complete.' });
+        }
 
         if (!setupToken) {
             await transaction.rollback();
@@ -48,23 +72,31 @@ const createAdmin = async (req, res) => {
             return res.status(400).json({ message: 'Invalid setup token.' });
         }
 
-        let adminRole = await Role.findOne({ where: { name: 'Super Admin' }, transaction });
-        
         if (!adminRole) {
             adminRole = await Role.create({ 
                 name: 'Super Admin', 
                 description: 'Full system access' 
             }, { transaction });
-        } else {
+        } else if (adminExists) {
             // Check if admin already exists
-            const adminCount = await User.count({ where: { roleId: adminRole.id }, transaction });
-            if (adminCount > 0) {
-                await transaction.rollback();
-                return res.status(400).json({ message: 'Setup is already complete. Admin exists.' });
-            }
+            await transaction.rollback();
+            return res.status(400).json({ message: 'Setup is already complete. Admin exists.' });
         }
 
-        // Create the user
+        // 1. Create Company
+        let logoUrl = null;
+        if (req.file) {
+            logoUrl = req.file.filename;
+        }
+
+        await Company.create({
+            name: companyName,
+            address: address || null,
+            contactNumber: contactNumber || null,
+            logoUrl: logoUrl
+        }, { transaction });
+
+        // 2. Create the user
         const newAdmin = await User.create({
             email,
             password, // Hook automatically hashes it
@@ -73,13 +105,24 @@ const createAdmin = async (req, res) => {
             needsPasswordChange: true // Follow the bonus instructions / existing model rule
         }, { transaction });
 
+        // 3. Mark setup complete (upsert to handle if it was left over from a previous setup)
+        const [appConfig, created] = await AppConfig.findOrCreate({
+            where: { key: 'isSetupComplete' },
+            defaults: { value: 'true' },
+            transaction
+        });
+        
+        if (!created) {
+            await appConfig.update({ value: 'true' }, { transaction });
+        }
+
         // IMPORTANT: Invalidate the token so it cannot be used again
         setupTokenService.invalidateToken();
 
         await transaction.commit();
 
         res.status(201).json({ 
-            message: 'Super Admin created successfully.',
+            message: 'Setup completed successfully.',
             user: { id: newAdmin.id, email: newAdmin.email }
         });
     } catch (error) {
@@ -117,4 +160,28 @@ const getSettings = async (req, res) => {
     }
 };
 
-module.exports = { updateSetting, getSettings, getSetupStatus, createAdmin };
+const getCompany = async (req, res) => {
+    try {
+        const company = await Company.findOne();
+        res.json(company || { name: 'Classbit Connect', logoUrl: null });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const updateCompany = async (req, res) => {
+    try {
+        const company = await Company.findOne();
+        if (company) {
+            await company.update(req.body);
+            res.json(company);
+        } else {
+            const newCompany = await Company.create(req.body);
+            res.json(newCompany);
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = { updateSetting, getSettings, getSetupStatus, completeSetup, getCompany, updateCompany };
