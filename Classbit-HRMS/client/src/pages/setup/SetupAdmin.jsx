@@ -22,7 +22,35 @@ const SetupAdmin = () => {
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [sendingToken, setSendingToken] = useState(false);
+    const [tokenMessage, setTokenMessage] = useState('');
     const navigate = useNavigate();
+
+    const handleSendToken = async () => {
+        if (!email) {
+            setError("Please enter an email address to receive the token.");
+            return;
+        }
+        
+        setSendingToken(true);
+        setError(null);
+        setTokenMessage('');
+
+        try {
+            const response = await axios.post('http://localhost:5000/api/setup/send-token', { email });
+            
+            if (response.data.isFallback) {
+                setSetupToken(response.data.token);
+                setTokenMessage("SMTP not configured. Token auto-filled.");
+            } else {
+                setTokenMessage("Setup token sent to your email!");
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to send setup token');
+        } finally {
+            setSendingToken(false);
+        }
+    };
 
     const handleNext = (e) => {
         e.preventDefault();
@@ -246,7 +274,17 @@ const SetupAdmin = () => {
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">Setup Token *</label>
+                                        <div className="flex justify-between items-center mb-2">
+                                            <label className="block text-sm font-medium text-[var(--text-primary)]">Setup Token *</label>
+                                            <button 
+                                                type="button" 
+                                                onClick={handleSendToken}
+                                                disabled={sendingToken}
+                                                className="text-xs text-blue-500 hover:text-blue-600 font-semibold disabled:opacity-50 transition-colors"
+                                            >
+                                                {sendingToken ? 'Sending...' : 'Get Setup Token'}
+                                            </button>
+                                        </div>
                                         <div className="relative">
                                             <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
                                             <input
@@ -258,6 +296,9 @@ const SetupAdmin = () => {
                                                 required
                                             />
                                         </div>
+                                        {tokenMessage && (
+                                            <p className="text-emerald-500 text-xs mt-2 font-medium">{tokenMessage}</p>
+                                        )}
                                     </div>
 
                                     <div className="flex gap-4 mt-6">

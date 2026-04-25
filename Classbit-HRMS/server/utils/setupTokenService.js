@@ -11,11 +11,9 @@ class SetupTokenService {
             console.log('\n======================================================');
             console.log('   SYSTEM SETUP REQUIRED - NO SUPER ADMIN FOUND       ');
             console.log('------------------------------------------------------');
-            console.log(`   Your ONE-TIME Setup Token is:`);
-            console.log(`   ${this.token}`);
-            console.log('   ');
-            console.log('   Please provide this token in the UI to configure ');
-            console.log('   the initial Super Admin account.');
+            console.log('   A Setup Token has been generated in the background.');
+            console.log('   Please request it via the UI to configure the');
+            console.log('   initial Super Admin account.');
             console.log('======================================================\n');
         }
         return this.token;

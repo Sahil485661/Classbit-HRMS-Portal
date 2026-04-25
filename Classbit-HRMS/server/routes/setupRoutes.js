@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { updateSetting, getSettings, getSetupStatus, completeSetup, getCompany, updateCompany } = require('../controllers/setupController');
+const { updateSetting, getSettings, getSetupStatus, completeSetup, getCompany, updateCompany, sendSetupToken } = require('../controllers/setupController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
 
@@ -8,6 +8,7 @@ const upload = require('../middleware/uploadMiddleware');
 router.get('/status', getSetupStatus);
 router.post('/complete', upload.single('logo'), completeSetup);
 router.get('/company', getCompany);
+router.post('/send-token', sendSetupToken);
 
 // Protected Settings Routes
 router.use(protect);

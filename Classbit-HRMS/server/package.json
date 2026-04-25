@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "server": "nodemon index.js",
+    "start": "nodemon -e js,json,env index.js",
+    "server": "nodemon -e js,json,env index.js",
     "data:import": "node seeder.js",
     "setup": "node setup-env.js"
   },

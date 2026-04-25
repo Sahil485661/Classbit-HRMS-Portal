@@ -1,5 +1,6 @@
 const { Setting, User, Role, Company, AppConfig, sequelize } = require('../models');
 const setupTokenService = require('../utils/setupTokenService');
+const nodemailer = require('nodemailer');
 
 const getSetupStatus = async (req, res) => {
     try {
@@ -184,4 +185,139 @@ const updateCompany = async (req, res) => {
     }
 };
 
-module.exports = { updateSetting, getSettings, getSetupStatus, completeSetup, getCompany, updateCompany };
+const sendSetupToken = async (req, res) => {
+    try {
+        const { email } = req.body;
+        
+        // 1. Verify we actually need a setup token
+        const adminRole = await Role.findOne({ where: { name: 'Super Admin' } });
+        let adminExists = false;
+        if (adminRole) {
+            const adminCount = await User.count({ where: { roleId: adminRole.id } });
+            if (adminCount > 0) adminExists = true;
+        }
+
+        const configCheck = await AppConfig.findOne({ where: { key: 'isSetupComplete' } });
+        let isSetupComplete = false;
+        if (configCheck && configCheck.value === 'true' && adminExists) {
+            isSetupComplete = true;
+        } else if (adminExists) {
+            isSetupComplete = true;
+        }
+
+        if (isSetupComplete) {
+            return res.status(400).json({ message: 'Setup is already complete.' });
+        }
+
+        if (!email) {
+            return res.status(400).json({ message: 'Email address is required to send token.' });
+        }
+
+        // 2. Get the generated token
+        const token = setupTokenService.generateToken();
+
+        // 3. Check for SMTP config
+        const { SMTP_USER, SMTP_PASSWORD } = process.env;
+
+        if (!SMTP_USER || !SMTP_PASSWORD) {
+            // Fallback: No SMTP configured, return token in UI
+            console.warn("SMTP not configured. Falling back to UI token delivery.");
+            return res.json({ 
+                message: 'SMTP not configured. Token auto-filled.', 
+                token: token,
+                isFallback: true 
+            });
+        }
+
+        // 4. Send email
+        const transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST || 'smtp.gmail.com',
+            port: process.env.SMTP_PORT || 587,
+            secure: process.env.SMTP_SECURE === 'true' || false,
+            auth: {
+                user: SMTP_USER,
+                pass: SMTP_PASSWORD
+            }
+        });
+
+        const htmlTemplate = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>HRMS Setup Token</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f6f8fa;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 30px auto;
+      background: #ffffff;
+      border: 1px solid #e1e4e8;
+      border-radius: 8px;
+      padding: 20px;
+    }
+    h2 {
+      color: #2c3e50;
+    }
+    .token-box {
+      background: #f0f4f8;
+      border: 1px dashed #2c3e50;
+      padding: 15px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      margin: 20px 0;
+    }
+    p {
+      color: #333333;
+      line-height: 1.5;
+    }
+    .footer {
+      font-size: 12px;
+      color: #777777;
+      margin-top: 30px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>HRMS System Setup Required</h2>
+    <p>Hello,</p>
+    <p>Your HRMS system requires initial configuration. Please use the following one‑time Setup Token to create the first Super Admin account:</p>
+    
+    <div class="token-box">
+      ${token}
+    </div>
+    
+    <p>This token is valid for a single use only. Enter it in the Setup Wizard to continue with onboarding.</p>
+    <p><strong>Security Note:</strong> Do not share this token outside your organization. It will expire once used.</p>
+    
+    <div class="footer">
+      &copy; 2026 HRMS System | Secure Setup Service
+    </div>
+  </div>
+</body>
+</html>`;
+
+        await transporter.sendMail({
+            from: `"HRMS Setup" <${SMTP_USER}>`,
+            to: email,
+            subject: 'HRMS Secure Setup Token',
+            html: htmlTemplate
+        });
+
+        return res.json({ message: 'Setup token has been sent to your email.' });
+
+    } catch (error) {
+        console.error('Failed to send token email:', error);
+        return res.status(500).json({ message: 'Failed to send token.', error: error.message });
+    }
+};
+
+module.exports = { updateSetting, getSettings, getSetupStatus, completeSetup, getCompany, updateCompany, sendSetupToken };

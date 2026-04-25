@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import Login from './pages/Login';
 import SetupAdmin from './pages/setup/SetupAdmin';
+import EnvironmentSetup from './pages/setup/EnvironmentSetup';
 import CalendarPage from './pages/calendar/CalendarPage';
 import ForceChangePassword from './pages/ForceChangePassword';
 import ForgotPassword from './pages/ForgotPassword';
@@ -211,21 +212,19 @@ const SetupGuard = ({ children }) => {
   useEffect(() => {
       const checkSetup = async () => {
           try {
-              const response = await axios.get('http://localhost:5000/api/setup/status');
-              if (response.data.setupRequired) {
-                  setStatus({ loading: false, setupRequired: true });
-                  if (location.pathname !== '/setup-admin') {
-                      navigate('/setup-admin');
-                  }
+              // Append timestamp to prevent aggressive browser caching of the setup status
+              const response = await axios.get(`http://localhost:5000/api/setup/status?t=${new Date().getTime()}`);
+              if (response.data.envRequired) {
+                  setStatus({ loading: false, setupRequired: true, envRequired: true });
+              } else if (response.data.setupRequired) {
+                  setStatus({ loading: false, setupRequired: true, envRequired: false });
               } else {
-                  setStatus({ loading: false, setupRequired: false });
-                  if (location.pathname === '/setup-admin') {
-                      navigate('/login');
-                  }
+                  setStatus({ loading: false, setupRequired: false, envRequired: false });
               }
           } catch (err) {
               console.error("Setup check failed", err);
-              setStatus({ loading: false, setupRequired: false });
+              // If we cannot reach the backend, display an error instead of redirecting to login
+              setStatus({ loading: false, error: true });
           }
       };
       
@@ -240,9 +239,39 @@ const SetupGuard = ({ children }) => {
       );
   }
 
-  // If setup is required and we aren't on /setup-admin, don't render children until redirect completes
-  if (status.setupRequired && location.pathname !== '/setup-admin') {
-      return null;
+  if (status.error) {
+      return (
+          <div className="flex flex-col justify-center items-center h-screen bg-[var(--bg-primary)] text-center p-6">
+              <div className="text-red-500 mb-4">
+                  <AlertCircle className="w-16 h-16 mx-auto mb-4" />
+              </div>
+              <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Backend Server Unreachable</h1>
+              <p className="text-[var(--text-secondary)] mb-6 max-w-md">
+                  We couldn't connect to the backend server. It may have crashed due to invalid database credentials in your .env file, or it's currently restarting.
+              </p>
+              <button 
+                  onClick={() => window.location.reload()}
+                  className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+              >
+                  Retry Connection
+              </button>
+          </div>
+      );
+  }
+
+  // If env setup is required and we aren't on /setup-env, redirect securely
+  if (status.envRequired && location.pathname !== '/setup-env') {
+      return <Navigate to="/setup-env" replace />;
+  }
+
+  // If setup is required and we aren't on /setup-admin, redirect securely
+  if (status.setupRequired && !status.envRequired && location.pathname !== '/setup-admin') {
+      return <Navigate to="/setup-admin" replace />;
+  }
+
+  // If setup is completely done but user tries to access setup pages, send them to login
+  if (!status.setupRequired && !status.envRequired && (location.pathname === '/setup-env' || location.pathname === '/setup-admin')) {
+      return <Navigate to="/login" replace />;
   }
 
   return children;
@@ -254,6 +283,7 @@ function App() {
       <Router>
         <SetupGuard>
           <Routes>
+          <Route path="/setup-env" element={<EnvironmentSetup />} />
           <Route path="/setup-admin" element={<SetupAdmin />} />
           <Route path="/login" element={<Login />} />
           <Route path="/force-change-password" element={<ForceChangePassword />} />
