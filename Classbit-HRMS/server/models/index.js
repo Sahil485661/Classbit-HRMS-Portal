@@ -30,6 +30,7 @@ const ChatGroupMember = require('./ChatGroupMember');
 const Meeting = require('./Meeting');
 const Company = require('./Company');
 const AppConfig = require('./AppConfig');
+const Image = require('./Image');
 
 // Associations
 
@@ -179,5 +180,6 @@ module.exports = {
     ChatGroupMember,
     Meeting,
     Company,
-    AppConfig
+    AppConfig,
+    Image
 };

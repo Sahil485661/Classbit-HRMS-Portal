@@ -97,6 +97,7 @@ NODE_ENV=${nodeEnv || 'development'}
     app.use('/api/reimbursements', require('./routes/reimbursementRoutes'));
     app.use('/api/email-settings', require('./routes/emailSettingsRoutes'));
     app.use('/api/email-actions', require('./routes/emailActionsRoutes'));
+    app.use('/api/images', require('./routes/imageRoutes'));
 
     app.use('/uploads', express.static('uploads'));
 
